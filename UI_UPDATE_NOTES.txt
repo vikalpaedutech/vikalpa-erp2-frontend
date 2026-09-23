@@ -1,0 +1,8 @@
+Vikalpa ERP frontend UI-only update
+- Tailwind CSS v4 retained and used for layout/styling.
+- AppLayout sidebar visually refreshed and made mobile responsive.
+- Sidebar section labels are now top-level only; item.group subsection headings are no longer rendered.
+- Dashboard remains pinned at the top and is not duplicated inside a section.
+- Existing navigation, permissions, routes, API calls and business logic were not intentionally changed.
+- Global Tailwind base styles added for typography, focus states, selection and scrollbars.
+- No component-library dependency was added because the supplied frontend package does not include a Tailwind component library; adding one would unnecessarily change dependencies for a UI-only request.

@@ -1,0 +1,25 @@
+import { useEffect, useState } from "react";
+import { getAbsenteeCallingDashboard, exportAbsenteeCallingDashboard, exportCallingStudentData } from "../services/dashboard.service";
+import { DashboardHeader, DashboardTable, ErrorBox, ExportButton, LoadingBox, MetricCard, ProgramBatchFilters, RegionFilters, today, useDashboardOptions } from "../components/dashboardCommon";
+
+export default function AbsenteeCallingDashboard() {
+  const { options } = useDashboardOptions();
+  const [filters, setFilters] = useState({ programId: "", batchId: "", districtId: "", blockId: "", centerId: "", from: today(), to: today(), notMarked: false });
+  const [data, setData] = useState(null); const [loading, setLoading] = useState(false); const [exporting, setExporting] = useState(false); const [studentExporting, setStudentExporting] = useState(false); const [error, setError] = useState("");
+  const load = async () => { if ((options.programs.length > 1 || options.batches.length > 1) && (!filters.programId || !filters.batchId)) { setError("Select Program and Batch because multiple program/batch assignments are available."); return; } try { setLoading(true); setError(""); setData((await getAbsenteeCallingDashboard(filters)).data); } catch (e) { setError(e.response?.data?.message || "Unable to load absentee calling dashboard"); } finally { setLoading(false); } };
+  useEffect(() => { if (options.programs.length === 1 && options.batches.length === 1) setFilters((x) => ({ ...x, programId: String(options.programs[0]._id), batchId: String(options.batches[0]._id) })); }, [options.programs, options.batches]);
+  const exportExcel = async () => { try { setExporting(true); await exportAbsenteeCallingDashboard(filters); } catch (e) { setError(e.response?.data?.message || "Unable to export calling dashboard"); } finally { setExporting(false); } };
+  const exportStudents = async () => { try { setStudentExporting(true); await exportCallingStudentData(filters); } catch (e) { setError(e.response?.data?.message || "Unable to export calling student data"); } finally { setStudentExporting(false); } };
+  return <div className="min-h-full space-y-6 p-4 sm:p-6 lg:p-8">
+    <DashboardHeader eyebrow="Dashboards / Absentee Calling" title="Absentee Calling — Region Wise"><ExportButton permission="dashboard.absentee-calling.export" onClick={exportExcel} loading={exporting}>Export Summary</ExportButton><ExportButton permission="dashboard.absentee-calling.student-export" onClick={exportStudents} loading={studentExporting}>Export Calling Data</ExportButton></DashboardHeader>
+    <ProgramBatchFilters filters={filters} setFilters={setFilters} options={options} mandatory={options.programs.length > 1 || options.batches.length > 1} showDate onApply={load} />
+    <RegionFilters filters={filters} setFilters={setFilters} options={options} onApply={load} notMarkedLabel="Not Called" />
+    <ErrorBox message={error} />
+    {loading ? <LoadingBox text="Loading absentee calling..." /> : data ? <>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><MetricCard label="Total Student" value={data.summary.totalStudent} tone="slate" /><MetricCard label="Total Absent" value={data.summary.totalAbsent} tone="rose" /><MetricCard label="Connected" value={data.summary.connected} tone="emerald" /><MetricCard label="Not Connected" value={data.summary.notConnected} tone="amber" /><MetricCard label="Pending Calls" value={data.summary.pending} tone="indigo" /></section>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{(data.cards || []).map((c) => <article key={`${c.programId}-${c.batchId}`} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="font-black">{c.programName}</h3><p className="text-xs font-bold text-indigo-600">Batch: {c.batchName}</p><div className="mt-4 grid grid-cols-3 gap-2"><MetricCard label="Students" value={c.totalStudent} tone="slate" /><MetricCard label="Present" value={c.totalPresent} tone="emerald" /><MetricCard label="Absent" value={c.totalAbsent} tone="rose" /></div></article>)}</section>
+      <DashboardTable title="District / Block / Center" rows={data.table} columns={[{ key: "district", label: "District" }, { key: "block", label: "Block" }, { key: "center", label: "Center" }, { key: "totalStudent", label: "Total Student" }, { key: "totalAbsent", label: "Total Absent" }, { key: "connected", label: "Connected" }, { key: "notConnected", label: "Not Connected" }, { key: "pendingCalls", label: "Pending Calls" }]} />
+      <DashboardTable title="Calling Records" rows={data.rows || []} columns={[{ key: "srn", label: "SRN" }, { key: "name", label: "Student" }, { key: "father", label: "Father" }, { key: "contactDetails", label: "Contact Details" }, { key: "district", label: "District" }, { key: "block", label: "Block" }, { key: "center", label: "Center" }, { key: "status", label: "Status" }, { key: "callCount", label: "Calls" }, { key: "remark", label: "Remark" }, { key: "comment", label: "Comment" }, { key: "followUpDate", label: "Follow Up" }]} />
+    </> : null}
+  </div>;
+}
