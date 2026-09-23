@@ -1,7 +1,16 @@
 import axios from "axios";
 
+// const apiClient = axios.create({
+//   baseURL: "http://localhost:8100/api/v1",
+//   withCredentials: true,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
+
 const apiClient = axios.create({
-  baseURL: "http://localhost:8100/api/v1",
+  baseURL: "http://64.227.143.155:8100/api/v1",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
