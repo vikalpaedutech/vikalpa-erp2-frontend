@@ -6,8 +6,8 @@ import { createExam } from "../services/exam.service";
 import ProgramDropdown from "../../../components/common/dropdowns/ProgramDropdown";
 import BatchDropdown from "../../../components/common/dropdowns/BatchDropdown";
 
-import { getActivePrograms } from "../../../services/program.service";
-import { getActiveBatches } from "../../../services/batch.service";
+import { getActivePrograms, getPrograms } from "../../../services/program.service";
+import { getActiveBatches, getBatches } from "../../../services/batch.service";
 
 const CreateExamManagement = () => {
   const navigate = useNavigate();
@@ -59,25 +59,51 @@ const CreateExamManagement = () => {
         setError("");
 
         const [
-          programsResponse,
-          batchesResponse,
-        ] = await Promise.all([
+          programsResult,
+          batchesResult,
+        ] = await Promise.allSettled([
           getActivePrograms(),
-
           getActiveBatches(),
         ]);
 
-        setPrograms(
-          programsResponse?.data?.programs ||
-            programsResponse?.data ||
-            []
-        );
+        const getList = (result) => {
+          if (result.status !== "fulfilled") return null;
+          const response = result.value;
+          const data = response?.data;
+          return Array.isArray(data?.programs)
+            ? data.programs
+            : Array.isArray(data?.batches)
+              ? data.batches
+              : Array.isArray(data)
+                ? data
+                : null;
+        };
 
-        setBatches(
-          batchesResponse?.data?.batches ||
-            batchesResponse?.data ||
-            []
-        );
+        let programList = getList(programsResult);
+        let batchList = getList(batchesResult);
+
+        // Keep Create Exam resilient to a deployment where the /active
+        // endpoints are missing or temporarily unavailable.
+        if (!programList) {
+          const fallback = await getPrograms({ isActive: true, limit: 100 });
+          programList = Array.isArray(fallback?.data?.programs)
+            ? fallback.data.programs
+            : Array.isArray(fallback?.data)
+              ? fallback.data
+              : [];
+        }
+
+        if (!batchList) {
+          const fallback = await getBatches({ isActive: true, limit: 100 });
+          batchList = Array.isArray(fallback?.data?.batches)
+            ? fallback.data.batches
+            : Array.isArray(fallback?.data)
+              ? fallback.data
+              : [];
+        }
+
+        setPrograms(programList || []);
+        setBatches(batchList || []);
       } catch (error) {
         console.error(
           "Failed to load exam management data:",

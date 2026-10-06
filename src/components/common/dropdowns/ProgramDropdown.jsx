@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useRegionAccess } from "../../../context/RegionAccessContext";
+import { useAuth } from "../../../context/AuthContext";
 
 function ProgramDropdown({
   programs = [],
@@ -13,6 +14,7 @@ function ProgramDropdown({
   hideWhenSingle = false,
 }) {
   const { programAccess, accessScope } = useRegionAccess();
+  const { isAdmin } = useAuth();
 
   const accessibleProgramIds = useMemo(
     () => new Set(
@@ -28,11 +30,14 @@ function ProgramDropdown({
     // access metadata yet, keep the list visible while authorization hydrates.
     // Once access is available, apply the normal assignment filter.
     if (!Array.isArray(programs)) return [];
-    if (accessScope == null) return programs;
+    // Administrators have global academic access and must never be
+    // filtered by the assignment arrays in UserAccess (which are empty
+    // by design for admins).
+    if (isAdmin || accessScope == null) return programs;
     return programs.filter((program) =>
       accessibleProgramIds.has(String(program?._id ?? program?.id))
     );
-  }, [programs, accessibleProgramIds, programAccess?.programs, accessScope]);
+  }, [programs, accessibleProgramIds, programAccess?.programs, accessScope, isAdmin]);
 
   useEffect(() => {
     if (!autoSelectSingle || availablePrograms.length !== 1) return;

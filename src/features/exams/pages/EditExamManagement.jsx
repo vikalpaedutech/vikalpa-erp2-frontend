@@ -9,8 +9,8 @@ import {
 import ProgramDropdown from "../../../components/common/dropdowns/ProgramDropdown";
 import BatchDropdown from "../../../components/common/dropdowns/BatchDropdown";
 
-import { getActivePrograms } from "../../../services/program.service";
-import { getActiveBatches } from "../../../services/batch.service";
+import { getActivePrograms, getPrograms } from "../../../services/program.service";
+import { getActiveBatches, getBatches } from "../../../services/batch.service";
 
 const EditExamManagement = () => {
   const { examId } = useParams();
@@ -58,15 +58,10 @@ const EditExamManagement = () => {
         setLoading(true);
         setError("");
 
-        const [
-          examResponse,
-          programsResponse,
-          batchesResponse,
-        ] = await Promise.all([
-          getExamById(examId),
+        const examResponse = await getExamById(examId);
 
+        const [programsResult, batchesResult] = await Promise.allSettled([
           getActivePrograms(),
-
           getActiveBatches(),
         ]);
 
@@ -74,27 +69,37 @@ const EditExamManagement = () => {
           examResponse?.data?.exam ||
           examResponse?.data;
 
-        const programsData =
-          programsResponse?.data?.programs ||
-          programsResponse?.data ||
-          [];
+        const extractList = (result, key) => {
+          if (result.status !== "fulfilled") return null;
+          const data = result.value?.data;
+          if (Array.isArray(data?.[key])) return data[key];
+          if (Array.isArray(data)) return data;
+          return null;
+        };
 
-        const batchesData =
-          batchesResponse?.data?.batches ||
-          batchesResponse?.data ||
-          [];
+        let programsData = extractList(programsResult, "programs");
+        let batchesData = extractList(batchesResult, "batches");
 
-        setPrograms(
-          Array.isArray(programsData)
-            ? programsData
-            : []
-        );
+        if (!programsData) {
+          const fallback = await getPrograms({ isActive: true, limit: 100 });
+          programsData = Array.isArray(fallback?.data?.programs)
+            ? fallback.data.programs
+            : Array.isArray(fallback?.data)
+              ? fallback.data
+              : [];
+        }
 
-        setBatches(
-          Array.isArray(batchesData)
-            ? batchesData
-            : []
-        );
+        if (!batchesData) {
+          const fallback = await getBatches({ isActive: true, limit: 100 });
+          batchesData = Array.isArray(fallback?.data?.batches)
+            ? fallback.data.batches
+            : Array.isArray(fallback?.data)
+              ? fallback.data
+              : [];
+        }
+
+        setPrograms(Array.isArray(programsData) ? programsData : []);
+        setBatches(Array.isArray(batchesData) ? batchesData : []);
 
         // --------------------------------------------------------
         // EXAM DATA

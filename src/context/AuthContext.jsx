@@ -5,8 +5,6 @@ import {
     getMyAccessScope,
 } from "../services/auth.service";
 import { hasPermission } from "../utils/authorization";
-import { getActivePrograms } from "../services/program.service";
-import { getActiveBatches } from "../services/batch.service";
 
 const AuthContext = createContext(null);
 
@@ -57,7 +55,7 @@ export const AuthProvider = ({ children }) => {
     const [access, setAccess] = useState(null);
     const [accessScope, setAccessScope] = useState(null);
 
-    const loadAuthorization = async (currentUser = user) => {
+    const loadAuthorization = async () => {
         const [accessResponse, accessScopeResponse] = await Promise.all([
             getMyAccess(),
             getMyAccessScope(),
@@ -68,44 +66,15 @@ export const AuthProvider = ({ children }) => {
 
         setAccess(resolvedAccess);
 
-        // Admins intentionally do not need explicit Program/Batch assignments.
-        // Populate their effective academic access from the active master lists
-        // so every existing consumer of accessScope.programAccess behaves
-        // consistently (dropdowns, filters, reports, etc.). Non-admin access
-        // remains exactly as assigned by UserAccess.
-        const resolvedIsAdmin = isAdministrator(resolvedAccess, currentUser);
-
-        if (resolvedIsAdmin) {
-            try {
-                const [programResponse, batchResponse] = await Promise.all([
-                    getActivePrograms(),
-                    getActiveBatches(),
-                ]);
-
-                const programs = unwrapApiData(programResponse);
-                const batches = unwrapApiData(batchResponse);
-
-                setAccessScope({
-                    ...(resolvedScope || {}),
-                    programAccess: {
-                        programs: Array.isArray(programs) ? programs : [],
-                        batches: Array.isArray(batches) ? batches : [],
-                    },
-                });
-            } catch (error) {
-                // Do not fail authentication if the optional Admin master-list
-                // hydration fails. Preserve the original authorization response.
-                console.error("Failed to load Admin Program/Batch access:", error);
-                setAccessScope(resolvedScope);
-            }
-        } else {
-            setAccessScope(resolvedScope);
-        }
+        // /auth/my-access-scope returns effective Program/Batch access.
+        // Admins receive all active Programs/Batches from the backend, while
+        // non-admin users receive only their explicit assignments.
+        setAccessScope(resolvedScope);
     };
 
     const login = async (userData) => {
         setUser(userData);
-        await loadAuthorization(userData);
+        await loadAuthorization();
     };
 
     const logout = async () => {
@@ -124,7 +93,7 @@ export const AuthProvider = ({ children }) => {
                 const response = await getCurrentUser();
                 const currentUser = unwrapApiData(response);
                 setUser(currentUser);
-                await loadAuthorization(currentUser);
+                await loadAuthorization();
             } catch (error) {
                 setUser(null);
                 setAccess(null);

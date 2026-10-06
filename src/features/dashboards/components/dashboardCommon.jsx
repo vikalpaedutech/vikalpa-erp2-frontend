@@ -79,7 +79,7 @@ export function DashboardTable({ title, rows = [], columns = [], compact = false
 }
 
 export function ProgramBatchFilters({ filters, setFilters, options, mandatory = false, showDate = false, onApply }) {
-  const batches = useMemo(() => filters.programId ? options.batches.filter((b) => String(b.programId) === String(filters.programId)) : options.batches, [options.batches, filters.programId]);
+  const batches = useMemo(() => filters.programId ? options.batches.filter((b) => String(b?.programId?._id ?? b?.programId?.id ?? b?.programId) === String(filters.programId)) : options.batches, [options.batches, filters.programId]);
   useEffect(() => {
     if (filters.batchId && !batches.some((b) => String(b._id) === String(filters.batchId))) setFilters((x) => ({ ...x, batchId: "" }));
   }, [batches, filters.batchId, setFilters]);

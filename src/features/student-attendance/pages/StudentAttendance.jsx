@@ -256,7 +256,9 @@ function StudentAttendance() {
         ).filter(
             (batch) =>
                 String(
-                    batch.programId
+                    batch?.programId?._id ??
+                    batch?.programId?.id ??
+                    batch?.programId
                 ) ===
                 String(programId)
         );

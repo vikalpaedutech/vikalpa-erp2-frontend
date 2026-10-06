@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useRegionAccess } from "../../../context/RegionAccessContext";
+import { useAuth } from "../../../context/AuthContext";
 
 function BatchDropdown({
   batches = [],
@@ -15,6 +16,7 @@ function BatchDropdown({
   independent = false,
 }) {
   const { programAccess, accessScope } = useRegionAccess();
+  const { isAdmin } = useAuth();
 
   const accessibleBatchIds = useMemo(
     () => new Set(
@@ -29,7 +31,7 @@ function BatchDropdown({
     if (!Array.isArray(batches)) return [];
 
     let filtered = batches;
-    if (accessScope != null && Array.isArray(programAccess?.batches)) {
+    if (!isAdmin && accessScope != null && Array.isArray(programAccess?.batches)) {
       filtered = filtered.filter((batch) =>
         accessibleBatchIds.has(String(batch?._id ?? batch?.id))
       );
@@ -45,7 +47,7 @@ function BatchDropdown({
 
     if (!independent && !programId) return [];
     return filtered;
-  }, [batches, accessibleBatchIds, programAccess?.batches, accessScope, independent, programId]);
+  }, [batches, accessibleBatchIds, programAccess?.batches, accessScope, isAdmin, independent, programId]);
 
   useEffect(() => {
     if (!autoSelectSingle || availableBatches.length !== 1) return;

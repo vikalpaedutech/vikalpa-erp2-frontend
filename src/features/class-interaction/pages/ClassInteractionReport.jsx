@@ -205,7 +205,8 @@ function ClassInteractionReport() {
       return batches.filter(
         (batch) =>
           String(
-            batch?.programId?._id ||
+            batch?.programId?._id ??
+              batch?.programId?.id ??
               batch?.programId
           ) ===
           String(programId)
