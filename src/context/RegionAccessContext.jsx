@@ -774,6 +774,7 @@ export const RegionAccessProvider = ({
       regionAccess,
 
       programAccess,
+      accessScope,
 
       // --------------------------------------------------------
       // Scope
@@ -850,6 +851,7 @@ export const RegionAccessProvider = ({
     [
       regionAccess,
       programAccess,
+      accessScope,
       scopeTypes,
       isGlobalAccess,
       loadingRegionAccess,

@@ -6,8 +6,8 @@ import { createExam } from "../services/exam.service";
 import ProgramDropdown from "../../../components/common/dropdowns/ProgramDropdown";
 import BatchDropdown from "../../../components/common/dropdowns/BatchDropdown";
 
-import { getPrograms } from "../../../services/program.service";
-import { getBatches } from "../../../services/batch.service";
+import { getActivePrograms } from "../../../services/program.service";
+import { getActiveBatches } from "../../../services/batch.service";
 
 const CreateExamManagement = () => {
   const navigate = useNavigate();
@@ -62,15 +62,9 @@ const CreateExamManagement = () => {
           programsResponse,
           batchesResponse,
         ] = await Promise.all([
-          getPrograms({
-            isActive: true,
-            limit: 100,
-          }),
+          getActivePrograms(),
 
-          getBatches({
-            isActive: true,
-            limit: 100,
-          }),
+          getActiveBatches(),
         ]);
 
         setPrograms(

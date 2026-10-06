@@ -14,11 +14,11 @@ import {
 } from "../services/exam.service";
 
 import {
-  getPrograms,
+  getActivePrograms,
 } from "../../../services/program.service";
 
 import {
-  getBatches,
+  getActiveBatches,
 } from "../../../services/batch.service";
 
 const Exams = () => {
@@ -44,12 +44,7 @@ const Exams = () => {
   const [error, setError] = useState("");
 
 
-  const { access } = useAuth();
-
-const isAdmin =
-  access?.roles?.some(
-    (role) => role.roleCode === "admin"
-  ) || false;
+  const { isAdmin } = useAuth();
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -74,15 +69,9 @@ const isAdmin =
           programsResponse,
           batchesResponse,
         ] = await Promise.all([
-          getPrograms({
-            isActive: true,
-            limit: 100,
-          }),
+          getActivePrograms(),
 
-          getBatches({
-            isActive: true,
-            limit: 100,
-          }),
+          getActiveBatches(),
         ]);
 
         // --------------------------------------------------------

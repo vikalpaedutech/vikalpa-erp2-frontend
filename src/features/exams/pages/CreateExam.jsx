@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import { useRegionAccess } from "../../../context/RegionAccessContext";
 
-import { getPrograms } from "../../../services/program.service";
-import { getBatches } from "../../../services/batch.service";
+import { getActivePrograms } from "../../../services/program.service";
+import { getActiveBatches } from "../../../services/batch.service";
 
 import { createExam } from "../services/exam.service";
 
@@ -72,10 +72,7 @@ function CreateExam() {
         setLoadingPrograms(true);
         setError("");
 
-        const response = await getPrograms({
-          isActive: true,
-          limit: 100,
-        });
+        const response = await getActivePrograms();
 
         const programList =
           response?.data?.programs ||
@@ -118,10 +115,7 @@ function CreateExam() {
         setLoadingBatches(true);
         setError("");
 
-        const response = await getBatches({
-          isActive: true,
-          limit: 100,
-        });
+        const response = await getActiveBatches();
 
         const batchList =
           response?.data?.batches ||

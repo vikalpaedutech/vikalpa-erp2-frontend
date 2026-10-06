@@ -9,8 +9,8 @@ import {
 import ProgramDropdown from "../../../components/common/dropdowns/ProgramDropdown";
 import BatchDropdown from "../../../components/common/dropdowns/BatchDropdown";
 
-import { getPrograms } from "../../../services/program.service";
-import { getBatches } from "../../../services/batch.service";
+import { getActivePrograms } from "../../../services/program.service";
+import { getActiveBatches } from "../../../services/batch.service";
 
 const EditExamManagement = () => {
   const { examId } = useParams();
@@ -65,15 +65,9 @@ const EditExamManagement = () => {
         ] = await Promise.all([
           getExamById(examId),
 
-          getPrograms({
-            isActive: true,
-            limit: 100,
-          }),
+          getActivePrograms(),
 
-          getBatches({
-            isActive: true,
-            limit: 100,
-          }),
+          getActiveBatches(),
         ]);
 
         const exam =

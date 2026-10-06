@@ -39,7 +39,7 @@ const ExamManagement = () => {
   // ============================================================
 
   const fetchExams = useCallback(
-    async (page = 1) => {
+    async (page = 1, searchOverride = search) => {
       try {
         setLoading(true);
         setError("");
@@ -49,9 +49,9 @@ const ExamManagement = () => {
           limit: pagination.limit,
         };
 
-        if (search.trim()) {
+        if (searchOverride.trim()) {
           params.search =
-            search.trim();
+            searchOverride.trim();
         }
 
         const response =
@@ -131,7 +131,7 @@ const ExamManagement = () => {
       page: 1,
     }));
 
-    fetchExams(1);
+    fetchExams(1, "");
   };
 
   // ============================================================
