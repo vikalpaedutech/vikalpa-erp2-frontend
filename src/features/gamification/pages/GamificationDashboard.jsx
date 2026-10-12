@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  initiateGamification,
+
   initiateGamificationDaily,
   updateGamificationMonthlyRanking,
   getGamificationLeaderboard,
   downloadGamificationReport,
 } from "../services/gamification.service";
+import { initiateGamification } from "../services/gamification.service";
 
 const currentMonth = () => {
   const d = new Date();
