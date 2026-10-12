@@ -1,4 +1,4 @@
-import axios from "axios";
+// import axios from "axios";
 
 // const apiClient = axios.create({
 //   baseURL: "http://localhost:8100/api/v1",
@@ -9,8 +9,79 @@ import axios from "axios";
 // });
 
 
+// // const apiClient = axios.create({
+// //   baseURL: "http://64.227.143.155:8100/api/v1",
+// //   withCredentials: true,
+// //   headers: {
+// //     "Content-Type": "application/json",
+// //   },
+// // });
+
+// let refreshPromise = null;
+
+// apiClient.interceptors.response.use(
+//   (response) => {
+//     return response;
+//   },
+
+//   async (error) => {
+//     const originalRequest = error.config;
+
+//     if (
+//       error.response?.status !== 401 ||
+//       !originalRequest ||
+//       originalRequest._retry ||
+//       originalRequest.url.includes("/auth/refresh-token") ||
+//       originalRequest.url.includes("/auth/login") ||
+//       originalRequest.url.includes("/auth/logout")
+//     ) {
+//       return Promise.reject(error);
+//     }
+
+//     originalRequest._retry = true;
+
+//     try {
+//       if (!refreshPromise) {
+//         refreshPromise = apiClient
+//           .post("/auth/refresh-token")
+//           .finally(() => {
+//             refreshPromise = null;
+//           });
+//       }
+
+//       await refreshPromise;
+
+//       return apiClient(originalRequest);
+//     } catch (refreshError) {
+//       window.dispatchEvent(new Event("auth:session-expired"));
+
+//       return Promise.reject(refreshError);
+//     }
+//   }
+// );
+
+// export default apiClient;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import axios from "axios";
+
 const apiClient = axios.create({
-  baseURL: "http://64.227.143.155:8100/api/v1",
+  baseURL: "/api/v1",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -20,10 +91,7 @@ const apiClient = axios.create({
 let refreshPromise = null;
 
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
@@ -50,11 +118,9 @@ apiClient.interceptors.response.use(
       }
 
       await refreshPromise;
-
       return apiClient(originalRequest);
     } catch (refreshError) {
       window.dispatchEvent(new Event("auth:session-expired"));
-
       return Promise.reject(refreshError);
     }
   }

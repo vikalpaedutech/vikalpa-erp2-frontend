@@ -62,3 +62,5 @@ export const downloadGamificationReport = async (month, format = "xlsx") => {
   });
   return response.data;
 };
+
+export const initiateGamificationDaily = async (date) => { const response = await apiClient.post("/gamification-management/initiate-daily", { date }); return response.data; };

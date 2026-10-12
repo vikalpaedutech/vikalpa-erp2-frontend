@@ -5,6 +5,7 @@ import React, {
     useMemo,
     useState,
 } from "react";
+import { useAuth } from "../../../context/AuthContext";
 
 import AttendanceFilters from "../components/AttendanceFilters";
 import AttendanceSummary from "../components/AttendanceSummary";
@@ -31,6 +32,8 @@ import {
 } from "../../../services/center.service";
 
 function StudentAttendance() {
+    const { can } = useAuth();
+    const canMarkAllPresent = can("student-attendance.mark-all-present");
     const {
         access,
         isAdmin,
@@ -1319,22 +1322,16 @@ function StudentAttendance() {
                     </p>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={
-                        handleBulkMarkPresent
-                    }
-                    disabled={
-                        bulkLoading ||
-                        loading ||
-                        !students.length
-                    }
-                    className="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    {bulkLoading
-                        ? "Marking..."
-                        : "Mark All Present"}
-                </button>
+                {canMarkAllPresent && (
+                    <button
+                        type="button"
+                        onClick={handleBulkMarkPresent}
+                        disabled={bulkLoading || loading || !students.length}
+                        className="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {bulkLoading ? "Marking..." : "Mark All Present"}
+                    </button>
+                )}
             </div>
 
             {/* ==================================================

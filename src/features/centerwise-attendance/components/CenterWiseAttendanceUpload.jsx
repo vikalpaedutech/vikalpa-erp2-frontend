@@ -142,16 +142,6 @@ const CenterWiseAttendanceUpload = ({
       return;
     }
 
-    if (!districtId) {
-      setError("District is required.");
-      return;
-    }
-
-    if (!blockId) {
-      setError("Block is required.");
-      return;
-    }
-
     if (!centerId) {
       setError("Center is required.");
       return;
@@ -185,8 +175,6 @@ const CenterWiseAttendanceUpload = ({
 
       formData.append("programId", programId);
       formData.append("batchId", batchId);
-      formData.append("districtId", districtId);
-      formData.append("blockId", blockId);
       formData.append("centerId", centerId);
       formData.append("date", date);
       formData.append("file", selectedFile);

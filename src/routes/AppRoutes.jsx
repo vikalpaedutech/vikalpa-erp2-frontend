@@ -106,6 +106,7 @@ import AttendanceDashboard from "../features/dashboards/pages/AttendanceDashboar
 import DownloadStudentsDashboard from "../features/dashboards/pages/DownloadStudentsDashboard";
 import ExamsMarksDashboard from "../features/dashboards/pages/ExamsMarksDashboard";
 import CopyCheckingDashboard from "../features/dashboards/pages/CopyCheckingDashboard";
+import StudentResourceManagement from "../features/student-resources/StudentResourceManagement";
 
 function AppRoutes() {
 
@@ -175,6 +176,10 @@ function AppRoutes() {
             {/* =================================================
                 STUDENTS
             ================================================= */}
+
+            <Route path="/student-dress" element={<StudentResourceManagement type="dress" />} />
+            <Route path="/student-distance" element={<StudentResourceManagement type="distance" />} />
+            <Route path="/student-ta" element={<StudentResourceManagement type="ta" />} />
 
             <Route
               path="/students"
@@ -572,9 +577,6 @@ function AppRoutes() {
               element={<LeaveApprovalDetails />}
             />
 
-          </Route>
-
-
           {/* ===================================================
               EXAMS
           =================================================== */}
@@ -599,6 +601,8 @@ function AppRoutes() {
               <ExamStudents />
             }
           />
+
+          </Route>
 
 <Route
   path="/attendance"

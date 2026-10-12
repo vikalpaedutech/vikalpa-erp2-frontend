@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   initiateGamification,
+  initiateGamificationDaily,
   updateGamificationMonthlyRanking,
   getGamificationLeaderboard,
   downloadGamificationReport,
@@ -44,6 +45,7 @@ const classificationClass = (value) => {
 
 export default function GamificationDashboard() {
   const [month, setMonth] = useState(currentMonth());
+  const [rankDate, setRankDate] = useState(new Date().toISOString().slice(0, 10));
   const [monthlyLeaderboard, setMonthlyLeaderboard] =
     useState([]);
   const [dailyLeaderboard, setDailyLeaderboard] =
@@ -93,36 +95,11 @@ export default function GamificationDashboard() {
   }, [month]);
 
   const initiate = async () => {
-    if (
-      !window.confirm(
-        `Recalculate all gamification source data for ${month}? Existing generated points and the monthly rank summary for this month will be rebuilt.`
-      )
-    ) {
-      return;
-    }
-
-    setProcessing("recalculate");
-    setError("");
-    setMessage("");
-
-    try {
-      const response =
-        await initiateGamification(month);
-
-      setMessage(
-        response?.message ||
-          "Gamification recalculated successfully."
-      );
-
-      await loadDashboard();
-    } catch (e) {
-      setError(
-        e.response?.data?.message ||
-          "Failed to recalculate gamification."
-      );
-    } finally {
-      setProcessing("");
-    }
+    if (!window.confirm(`Calculate gamification rank for ${rankDate} only? Other dates will not be recalculated.`)) return;
+    setProcessing("recalculate"); setError(""); setMessage("");
+    try { const response = await initiateGamificationDaily(rankDate); setMessage(response?.message || `Rank calculated for ${rankDate}.`); await loadDashboard(); }
+    catch (e) { setError(e.response?.data?.message || "Failed to calculate daily rank."); }
+    finally { setProcessing(""); }
   };
 
   const updateRank = async () => {
@@ -258,6 +235,10 @@ export default function GamificationDashboard() {
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                Rank date
+                <input type="date" value={rankDate} onChange={(e) => setRankDate(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2.5" />
+              </label>
               <button
                 type="button"
                 onClick={initiate}
@@ -266,7 +247,7 @@ export default function GamificationDashboard() {
               >
                 {processing === "recalculate"
                   ? "Recalculating..."
-                  : "Initiate / Recalculate Ranking"}
+                  : "Calculate Today’s Rank"}
               </button>
 
               <button

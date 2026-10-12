@@ -42,6 +42,9 @@ export const administrationItems = [
   // ============================================================
   // STUDENT MANAGEMENT
   // ============================================================
+  { label: "Student Dress", path: "/student-dress", permission: "student-dress.view", section: "STUDENT MANAGEMENT", group: "Student Management", roles: ["admin", "cm", "cc"] },
+  { label: "Student Distance", path: "/student-distance", permission: "student-distance.view", section: "STUDENT MANAGEMENT", group: "Student Management", roles: ["admin", "cm", "cc"] },
+  { label: "Student TA", path: "/student-ta", permission: "student-ta.view", section: "STUDENT MANAGEMENT", group: "Student Management", roles: ["admin", "cm", "cc"] },
   { label: "Students", path: "/students", permission: "student.view", section: "STUDENT MANAGEMENT", group: "Students Administrations", roles: ["admin", "cm", "cc", "aci"] },
   { label: "Onboard Students", path: "/students/onboard", permission: "student.create", section: "STUDENT MANAGEMENT", group: "Students Administrations", roles: ["admin"] },
   { label: "Bulk Onboard Students", path: "/students/bulk-onboard", permission: "student.bulk.create", section: "STUDENT MANAGEMENT", group: "Students Administrations", roles: ["admin"] },
