@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 // import { useEffect, useState } from "react";
 // import useStudentScope from "../hooks/useStudentScope";
 
@@ -548,7 +549,7 @@
 //                         Program
 //                     </label>
 
-//                     <select
+//                     <SearchableSelect
 //                         name="programId"
 //                         value={filters.programId}
 //                         onChange={handleChange}
@@ -566,7 +567,7 @@
 //                                 {program.programName}
 //                             </option>
 //                         ))}
-//                     </select>
+//                     </SearchableSelect>
 //                 </div>
 
 //                 {/* Batch */}
@@ -575,7 +576,7 @@
 //                         Batch
 //                     </label>
 
-//                     <select
+//                     <SearchableSelect
 //                         name="batchId"
 //                         value={filters.batchId}
 //                         onChange={handleChange}
@@ -597,7 +598,7 @@
 //                                 {batch.batchName}
 //                             </option>
 //                         ))}
-//                     </select>
+//                     </SearchableSelect>
 //                 </div>
 
 //                 {/* District */}
@@ -606,7 +607,7 @@
 //                         District
 //                     </label>
 
-//                     <select
+//                     <SearchableSelect
 //                         name="districtId"
 //                         value={filters.districtId}
 //                         onChange={handleChange}
@@ -625,7 +626,7 @@
 //                                 {district.districtName}
 //                             </option>
 //                         ))}
-//                     </select>
+//                     </SearchableSelect>
 //                 </div>
 
 //                 {/* Block */}
@@ -634,7 +635,7 @@
 //                         Block
 //                     </label>
 
-//                     <select
+//                     <SearchableSelect
 //                         name="blockId"
 //                         value={filters.blockId}
 //                         onChange={handleChange}
@@ -656,7 +657,7 @@
 //                                 {block.blockName}
 //                             </option>
 //                         ))}
-//                     </select>
+//                     </SearchableSelect>
 //                 </div>
 
 //                 {/* Center */}
@@ -665,7 +666,7 @@
 //                         Center
 //                     </label>
 
-//                     <select
+//                     <SearchableSelect
 //                         name="centerId"
 //                         value={filters.centerId}
 //                         onChange={handleChange}
@@ -687,7 +688,7 @@
 //                                 {center.centerName}
 //                             </option>
 //                         ))}
-//                     </select>
+//                     </SearchableSelect>
 //                 </div>
 
 //                 {/* Board */}
@@ -696,7 +697,7 @@
 //                         Board
 //                     </label>
 
-//                     <select
+//                     <SearchableSelect
 //                         name="board"
 //                         value={filters.board}
 //                         onChange={handleChange}
@@ -713,7 +714,7 @@
 //                         <option value="CBSE">
 //                             CBSE
 //                         </option>
-//                     </select>
+//                     </SearchableSelect>
 //                 </div>
 
 //                 {/* Enrollment Status */}
@@ -722,7 +723,7 @@
 //                         Enrollment Status
 //                     </label>
 
-//                     <select
+//                     <SearchableSelect
 //                         name="status"
 //                         value={filters.status}
 //                         onChange={handleChange}
@@ -763,7 +764,7 @@
 //                         <option value="transfer-student">
 //                             Transfer Student
 //                         </option>
-//                     </select>
+//                     </SearchableSelect>
 //                 </div>
 
 //                 {/* Student Status */}
@@ -772,7 +773,7 @@
 //                         Student Status
 //                     </label>
 
-//                     <select
+//                     <SearchableSelect
 //                         name="isActive"
 //                         value={filters.isActive}
 //                         onChange={handleChange}
@@ -789,7 +790,7 @@
 //                         <option value="false">
 //                             Inactive
 //                         </option>
-//                     </select>
+//                     </SearchableSelect>
 //                 </div>
 //             </div>
 
@@ -1861,7 +1862,7 @@ const StudentFilters = ({ onSearch }) => {
                             Program
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="programId"
                             value={
                                 filters.programId
@@ -1893,7 +1894,7 @@ const StudentFilters = ({ onSearch }) => {
                                     </option>
                                 )
                             )}
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 
@@ -1904,7 +1905,7 @@ const StudentFilters = ({ onSearch }) => {
                         Batch
                     </label>
 
-                    <select
+                    <SearchableSelect
                         name="batchId"
                         value={
                             filters.batchId
@@ -1936,7 +1937,7 @@ const StudentFilters = ({ onSearch }) => {
                                 </option>
                             )
                         )}
-                    </select>
+                    </SearchableSelect>
                 </div>
 
                 {/* DISTRICT */}
@@ -1947,7 +1948,7 @@ const StudentFilters = ({ onSearch }) => {
                             District
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="districtId"
                             value={
                                 filters.districtId
@@ -1982,7 +1983,7 @@ const StudentFilters = ({ onSearch }) => {
                                     </option>
                                 )
                             )}
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 
@@ -1994,7 +1995,7 @@ const StudentFilters = ({ onSearch }) => {
                             Block
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="blockId"
                             value={
                                 filters.blockId
@@ -2031,7 +2032,7 @@ const StudentFilters = ({ onSearch }) => {
                                     </option>
                                 )
                             )}
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 
@@ -2042,7 +2043,7 @@ const StudentFilters = ({ onSearch }) => {
                         Center
                     </label>
 
-                    <select
+                    <SearchableSelect
                         name="centerId"
                         value={
                             filters.centerId
@@ -2079,7 +2080,7 @@ const StudentFilters = ({ onSearch }) => {
                                 </option>
                             )
                         )}
-                    </select>
+                    </SearchableSelect>
                 </div>
 
                 {/* BOARD */}
@@ -2090,7 +2091,7 @@ const StudentFilters = ({ onSearch }) => {
                             Board
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="board"
                             value={
                                 filters.board
@@ -2111,7 +2112,7 @@ const StudentFilters = ({ onSearch }) => {
                             <option value="CBSE">
                                 CBSE
                             </option>
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 
@@ -2123,7 +2124,7 @@ const StudentFilters = ({ onSearch }) => {
                             Enrollment Status
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="status"
                             value={
                                 filters.status
@@ -2168,7 +2169,7 @@ const StudentFilters = ({ onSearch }) => {
                             <option value="transfer-student">
                                 Transfer Student
                             </option>
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 
@@ -2180,7 +2181,7 @@ const StudentFilters = ({ onSearch }) => {
                             Student Status
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="isActive"
                             value={
                                 filters.isActive
@@ -2201,7 +2202,7 @@ const StudentFilters = ({ onSearch }) => {
                             <option value="false">
                                 Inactive
                             </option>
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
             </div>

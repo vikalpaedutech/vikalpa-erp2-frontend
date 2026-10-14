@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -375,7 +376,7 @@ function ApplyLeave() {
                 Leave Type
               </label>
 
-              <select
+              <SearchableSelect
                 name="leaveTypeId"
                 value={form.leaveTypeId}
                 onChange={handleChange}
@@ -394,7 +395,7 @@ function ApplyLeave() {
                     {leaveType.isPaid ? " — Paid" : " — Unpaid"}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="md:col-span-2 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-4">
@@ -498,7 +499,7 @@ function ApplyLeave() {
                 Duration
               </label>
 
-              <select
+              <SearchableSelect
                 name="durationType"
                 value={form.durationType}
                 onChange={handleChange}
@@ -507,7 +508,7 @@ function ApplyLeave() {
               >
                 <option value="Full Day">Full Day</option>
                 <option value="Half Day">Half Day</option>
-              </select>
+              </SearchableSelect>
             </div>
 
             {form.durationType === "Half Day" && (
@@ -516,7 +517,7 @@ function ApplyLeave() {
                   Half Day
                 </label>
 
-                <select
+                <SearchableSelect
                   name="halfDayType"
                   value={form.halfDayType}
                   onChange={handleChange}
@@ -526,7 +527,7 @@ function ApplyLeave() {
                   <option value="">Select Half</option>
                   <option value="First Half">First Half</option>
                   <option value="Second Half">Second Half</option>
-                </select>
+                </SearchableSelect>
               </div>
             )}
 

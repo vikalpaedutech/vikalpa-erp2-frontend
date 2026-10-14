@@ -454,12 +454,7 @@ function AppLayout() {
         (p) => String(p?.permissionCode || "").trim().toLowerCase()
       )
     );
-    return (
-      codes.has(required) ||
-      (required.startsWith("dashboard.") &&
-        required.endsWith(".view") &&
-        codes.has("dashboard.view"))
-    );
+    return codes.has(required);
   };
 
 
@@ -657,7 +652,7 @@ function AppLayout() {
         <nav className="flex-1 overflow-y-auto px-3 py-4 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent]">
 
           {/* Dashboard stays pinned at the top */}
-          {visibleNavigationItems.filter((item) => !item.section).map((item) => (
+          {navigationItems.filter((item) => !item.section).map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

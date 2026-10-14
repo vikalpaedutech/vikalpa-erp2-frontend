@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -370,7 +371,7 @@ const MonitoringReportFilters = ({
             </span>
           </label>
 
-          <select
+          <SearchableSelect
             id="monitoring-report-program"
             value={programId}
             onChange={
@@ -403,7 +404,7 @@ const MonitoringReportFilters = ({
                 </option>
               )
             )}
-          </select>
+          </SearchableSelect>
         </div>
 
         {/* ==================================================
@@ -421,7 +422,7 @@ const MonitoringReportFilters = ({
             </span>
           </label>
 
-          <select
+          <SearchableSelect
             id="monitoring-report-batch"
             value={batchId}
             onChange={
@@ -457,7 +458,7 @@ const MonitoringReportFilters = ({
                 </option>
               )
             )}
-          </select>
+          </SearchableSelect>
         </div>
 
         {/* ==================================================
@@ -472,7 +473,7 @@ const MonitoringReportFilters = ({
             District
           </label>
 
-          <select
+          <SearchableSelect
             id="monitoring-report-district"
             value={districtId}
             onChange={
@@ -505,7 +506,7 @@ const MonitoringReportFilters = ({
                 </option>
               )
             )}
-          </select>
+          </SearchableSelect>
         </div>
 
         {/* ==================================================

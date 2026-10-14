@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 
 import MultiSelectDropdown from "../components/MultiSelectDropdown";
@@ -1670,7 +1671,7 @@ function CenterMonitoringManagement() {
             Role
           </label>
 
-          <select
+          <SearchableSelect
             value={
               selectedRole
             }
@@ -1712,7 +1713,7 @@ function CenterMonitoringManagement() {
               )
             )}
 
-          </select>
+          </SearchableSelect>
 
         </div>
 
@@ -2011,7 +2012,7 @@ function CenterMonitoringManagement() {
                   Assignment Level
                 </label>
 
-                <select
+                <SearchableSelect
                   value={
                     assignmentLevel
                   }
@@ -2049,7 +2050,7 @@ function CenterMonitoringManagement() {
                     )
                   }
 
-                </select>
+                </SearchableSelect>
 
               </div>
 

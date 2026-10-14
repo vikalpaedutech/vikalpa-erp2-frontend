@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import React, {
   useEffect,
   useMemo,
@@ -433,37 +434,25 @@ function AbsenteeCalling() {
       // CENTERS
       // ========================================================
 
-      const filteredCenters =
-        allCenters.filter(
-          (center) => {
-            const centerId =
-              String(
-                center._id
-              );
+      const hasDistrictLevelAccess = regionAccess.some((region) => region.scope === "district");
+      const hasBlockLevelAccess = regionAccess.some((region) => region.scope === "block");
 
-            const blockId =
-              getId(
-                center.blockId
-              );
+      const filteredCenters = allCenters.filter((center) => {
+        const centerId = String(center._id);
+        const blockId = getId(center.blockId);
+        const districtId = getId(center.districtId);
 
-            const districtId =
-              getId(
-                center.districtId
-              );
-
-            return (
-              accessibleCenterIds.includes(
-                centerId
-              ) ||
-              accessibleBlockIds.includes(
-                blockId
-              ) ||
-              accessibleDistrictIds.includes(
-                districtId
-              )
-            );
-          }
-        );
+        // A center assignment grants access only to that center. Parent block/district
+        // IDs can also be present on a center-scoped access record, so they must not
+        // accidentally reveal sibling centers in the filter dropdown.
+        if (hasDistrictLevelAccess) {
+          return accessibleDistrictIds.includes(districtId);
+        }
+        if (hasBlockLevelAccess) {
+          return accessibleBlockIds.includes(blockId);
+        }
+        return accessibleCenterIds.includes(centerId);
+      });
 
       setCenters(
         filteredCenters
@@ -1285,7 +1274,7 @@ function AbsenteeCalling() {
                   Calling Status
                 </label>
 
-                <select
+                <SearchableSelect
                   value={
                     callingStatus
                   }
@@ -1312,7 +1301,7 @@ function AbsenteeCalling() {
                   <option value="Not Connected">
                     Not Connected
                   </option>
-                </select>
+                </SearchableSelect>
 
               </div>
 
@@ -1327,7 +1316,7 @@ function AbsenteeCalling() {
                     Remark
                   </label>
 
-                  <select
+                  <SearchableSelect
                     value={
                       remark
                     }
@@ -1370,7 +1359,7 @@ function AbsenteeCalling() {
                         </option>
                       )
                     )}
-                  </select>
+                  </SearchableSelect>
 
                 </div>
               )}

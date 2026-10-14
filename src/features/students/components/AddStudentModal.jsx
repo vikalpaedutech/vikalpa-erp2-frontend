@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 // FILE PATH: frontend/src/features/students/components/AddStudentModal.jsx
 
 import React from "react";
@@ -187,7 +188,7 @@ function AddStudentModal({
                                     Gender
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="gender"
                                     value={addStudentData.gender}
                                     onChange={onInputChange}
@@ -208,7 +209,7 @@ function AddStudentModal({
                                     <option value="Other">
                                         Other
                                     </option>
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* Category */}
@@ -311,7 +312,7 @@ function AddStudentModal({
                                     Program *
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="programId"
                                     value={addStudentData.programId}
                                     onChange={onInputChange}
@@ -330,7 +331,7 @@ function AddStudentModal({
                                             {program.programName}
                                         </option>
                                     ))}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* BATCH */}
@@ -339,7 +340,7 @@ function AddStudentModal({
                                     Batch *
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="batchId"
                                     value={addStudentData.batchId}
                                     onChange={onInputChange}
@@ -358,7 +359,7 @@ function AddStudentModal({
                                             {batch.batchName}
                                         </option>
                                     ))}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* DISTRICT */}
@@ -368,7 +369,7 @@ function AddStudentModal({
                                         District
                                     </label>
 
-                                    <select
+                                    <SearchableSelect
                                         name="districtId"
                                         value={addStudentData.districtId}
                                         onChange={onDistrictChange}
@@ -389,7 +390,7 @@ function AddStudentModal({
                                                 {district.districtName}
                                             </option>
                                         ))}
-                                    </select>
+                                    </SearchableSelect>
                                 </div>
                             )}
 
@@ -400,7 +401,7 @@ function AddStudentModal({
                                         Block
                                     </label>
 
-                                    <select
+                                    <SearchableSelect
                                         name="blockId"
                                         value={addStudentData.blockId}
                                         onChange={onBlockChange}
@@ -428,7 +429,7 @@ function AddStudentModal({
                                                 {block.blockName}
                                             </option>
                                         ))}
-                                    </select>
+                                    </SearchableSelect>
                                 </div>
                             )}
 
@@ -439,7 +440,7 @@ function AddStudentModal({
                                         Center
                                     </label>
 
-                                    <select
+                                    <SearchableSelect
                                         name="centerId"
                                         value={addStudentData.centerId}
                                         onChange={onInputChange}
@@ -468,7 +469,7 @@ function AddStudentModal({
                                                 {center.centerName}
                                             </option>
                                         ))}
-                                    </select>
+                                    </SearchableSelect>
                                 </div>
                             )}
 
@@ -478,7 +479,7 @@ function AddStudentModal({
                                     Class
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="class"
                                     value={addStudentData.class}
                                     onChange={onInputChange}
@@ -498,7 +499,7 @@ function AddStudentModal({
                                             </option>
                                         )
                                     )}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* BOARD */}

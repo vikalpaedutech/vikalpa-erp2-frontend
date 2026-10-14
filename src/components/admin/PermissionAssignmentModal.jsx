@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import Select from "react-select";
 
 export default function PermissionAssignmentModal({
   open,
@@ -17,13 +18,14 @@ export default function PermissionAssignmentModal({
   const [moduleFilter, setModuleFilter] = useState("all");
 
   const modules = useMemo(
-    () => [...new Set(permissions.map((p) => p.module).filter(Boolean))].sort(),
+    () => [...new Set(permissions.map((p) => p.module).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
     [permissions]
   );
 
   const grouped = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return permissions
+    return [...permissions]
+      .sort((a, b) => String(a.permissionName || "").localeCompare(String(b.permissionName || ""), undefined, { sensitivity: "base" }))
       .filter((p) => {
         const moduleOk = moduleFilter === "all" || p.module === moduleFilter;
         const text = `${p.permissionName} ${p.permissionCode} ${p.module} ${p.action}`.toLowerCase();
@@ -73,6 +75,8 @@ export default function PermissionAssignmentModal({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{assigned.size} selected</span>
+              <button type="button" onClick={() => setAssigned(new Set(permissions.map((p) => String(p._id))))} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50">Give All Permissions</button>
+              <button type="button" onClick={() => setAssigned(new Set())} className="rounded-xl border border-rose-200 px-3 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50">Clear All Permissions</button>
               {mode === "user" ? <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{effectiveIds.size} effective</span> : null}
               <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Close</button>
               <button type="button" onClick={onSave} disabled={saving} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button>
@@ -80,10 +84,18 @@ export default function PermissionAssignmentModal({
           </div>
           <div className="mt-4 flex flex-col gap-2 md:flex-row">
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search permissions..." className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400" />
-            <select value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400">
-              <option value="all">All modules</option>
-              {modules.map((module) => <option key={module} value={module}>{module.replaceAll("_", " ")}</option>)}
-            </select>
+            <div className="min-w-[220px] flex-1 md:flex-none md:w-64">
+              <Select
+                options={[{ value: "all", label: "All modules" }, ...modules.map((module) => ({ value: module, label: module.replaceAll("_", " ") }))]}
+                value={[{ value: "all", label: "All modules" }, ...modules.map((module) => ({ value: module, label: module.replaceAll("_", " ") }))].find((option) => option.value === moduleFilter) || null}
+                onChange={(option) => setModuleFilter(option?.value || "all")}
+                isSearchable
+                isClearable={false}
+                className="text-sm"
+                classNamePrefix="react-select"
+                placeholder="All modules"
+              />
+            </div>
           </div>
         </header>
 
@@ -113,6 +125,7 @@ export default function PermissionAssignmentModal({
                           <input type="checkbox" checked={direct} onChange={() => togglePermission(id)} className="mt-1 h-4 w-4 accent-indigo-600" />
                           <span className="min-w-0">
                             <span className="block text-sm font-semibold text-slate-800">{permission.permissionName}</span>
+                            {permission.description ? <span className="mt-1 block text-xs leading-5 text-slate-500">{permission.description}</span> : null}
                             <span className="mt-1 block break-all font-mono text-[10px] text-slate-400">{permission.permissionCode}</span>
                             {inherited ? <span className="mt-1 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Granted by role</span> : null}
                           </span>

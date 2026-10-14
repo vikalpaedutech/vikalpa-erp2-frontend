@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -173,7 +174,7 @@ const CallLogForm = ({
                     Calling Status
                 </label>
 
-                <select
+                <SearchableSelect
                     name="callingStatus"
                     value={
                         formData.callingStatus
@@ -196,7 +197,7 @@ const CallLogForm = ({
                             </option>
                         )
                     )}
-                </select>
+                </SearchableSelect>
             </div>
 
 
@@ -207,7 +208,7 @@ const CallLogForm = ({
                 </label>
 
                 {remarks.length > 0 ? (
-                    <select
+                    <SearchableSelect
                         name="remark"
                         value={
                             formData.remark
@@ -229,7 +230,7 @@ const CallLogForm = ({
                                 </option>
                             )
                         )}
-                    </select>
+                    </SearchableSelect>
                 ) : (
                     <input
                         type="text"

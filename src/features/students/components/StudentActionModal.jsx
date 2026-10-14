@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import React from "react";
 
 function StudentActionModal({
@@ -95,7 +96,7 @@ function StudentActionModal({
                                     District
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     value={selectedDistrictId}
                                     onChange={(e) =>
                                         onDistrictChange(e.target.value)
@@ -114,7 +115,7 @@ function StudentActionModal({
                                             {district.districtName}
                                         </option>
                                     ))}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             <div>
@@ -122,7 +123,7 @@ function StudentActionModal({
                                     Block
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     value={selectedBlockId}
                                     onChange={(e) =>
                                         onBlockChange(e.target.value)
@@ -142,7 +143,7 @@ function StudentActionModal({
                                             {block.blockName}
                                         </option>
                                     ))}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             <div>
@@ -150,7 +151,7 @@ function StudentActionModal({
                                     Center
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     value={selectedCenterId}
                                     onChange={(e) =>
                                         onCenterChange(e.target.value)
@@ -170,7 +171,7 @@ function StudentActionModal({
                                             {center.centerName}
                                         </option>
                                     ))}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                         </div>

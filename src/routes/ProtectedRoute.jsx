@@ -14,7 +14,7 @@ function ProtectedRoute() {
       .filter((x) => x.permission)
       .sort((a,b) => b.path.length - a.path.length)
       .find((x) => location.pathname === x.path || location.pathname.startsWith(`${x.path}/`));
-    if (item && !can(item.permission)) return <Navigate to="/dashboard" replace />;
+    if (item && item.path !== "/dashboard" && !can(item.permission)) return <Navigate to="/dashboard" replace />;
   }
 
   return <RegionAccessProvider><Outlet /></RegionAccessProvider>;

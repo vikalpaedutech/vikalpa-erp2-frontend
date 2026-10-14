@@ -199,9 +199,9 @@ export default function GamificationDashboard() {
               </h1>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-indigo-100/80">
-                Manage monthly gamification calculations,
-                update the ranking summary and export
-                performance reports.
+                Rankings refresh automatically after tracked activity changes.
+                Use recalculation controls only to recover or audit a period,
+                and export performance reports when needed.
               </p>
             </div>
 
@@ -230,8 +230,8 @@ export default function GamificationDashboard() {
                 Calculation Controls
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                Recalculate source events when attendance,
-                marks or other underlying data has changed.
+                Points and rankings update automatically after tracked activity saves.
+                These controls remain available for recovery and historical corrections.
               </p>
             </div>
 

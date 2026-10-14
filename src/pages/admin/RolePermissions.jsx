@@ -21,7 +21,7 @@ export default function RolePermissions() {
       setError("");
       const [roleResponse, permissionResponse] = await Promise.all([
         getRoles({ page: 1, limit: 100, isActive: "true" }),
-        getPermissions({ page: 1, limit: 500, isActive: "true" }),
+        getPermissions({ page: 1, limit: 1000, isActive: "true" }),
       ]);
       setRoles((roleResponse.data?.roles || []).filter((role) => role.isActive !== false));
       setPermissions(permissionResponse.data?.permissions || []);

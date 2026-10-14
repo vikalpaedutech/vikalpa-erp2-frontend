@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 // import { useEffect, useMemo, useState } from "react";
 
 // import {
@@ -1274,7 +1275,7 @@
 //                                             </span>
 //                                         </label>
 
-//                                         <select
+//                                         <SearchableSelect
 //                                             value={
 //                                                 expense.category
 //                                             }
@@ -1313,7 +1314,7 @@
 //                                                 )
 //                                             )}
 
-//                                         </select>
+//                                         </SearchableSelect>
 
 //                                     </div>
 
@@ -3234,7 +3235,7 @@ const BillForm = ({
                                             </span>
                                         </label>
 
-                                        <select
+                                        <SearchableSelect
                                             value={
                                                 expense.category
                                             }
@@ -3273,7 +3274,7 @@ const BillForm = ({
                                                 )
                                             )}
 
-                                        </select>
+                                        </SearchableSelect>
 
                                     </div>
 

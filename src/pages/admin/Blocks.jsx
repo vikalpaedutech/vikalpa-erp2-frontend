@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 import {
   getBlocks,
@@ -260,7 +261,7 @@ function Blocks() {
             Filter by District
           </label>
 
-          <select
+          <SearchableSelect
             value={selectedDistrict}
             onChange={(event) =>
               setSelectedDistrict(event.target.value)
@@ -282,7 +283,7 @@ function Blocks() {
                   : ""}
               </option>
             ))}
-          </select>
+          </SearchableSelect>
         </div>
       </div>
 
@@ -446,7 +447,7 @@ function Blocks() {
                   District
                 </label>
 
-                <select
+                <SearchableSelect
                   name="districtId"
                   value={formData.districtId}
                   onChange={handleInputChange}
@@ -468,7 +469,7 @@ function Blocks() {
                         : ""}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Block ID */}
@@ -575,7 +576,7 @@ function Blocks() {
                   District
                 </label>
 
-                <select
+                <SearchableSelect
                   name="districtId"
                   value={formData.districtId}
                   onChange={handleInputChange}
@@ -597,7 +598,7 @@ function Blocks() {
                         : ""}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Block ID */}

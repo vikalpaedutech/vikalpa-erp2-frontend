@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import {
   useEffect,
   useMemo,
@@ -604,7 +605,7 @@ function CenterMonitoringFilters({
               Program
             </label>
 
-            <select
+            <SearchableSelect
               value={programId}
               onChange={
                 handleProgramChange
@@ -636,7 +637,7 @@ function CenterMonitoringFilters({
                 )
               )}
 
-            </select>
+            </SearchableSelect>
 
           </div>
         )}
@@ -653,7 +654,7 @@ function CenterMonitoringFilters({
               Batch
             </label>
 
-            <select
+            <SearchableSelect
               value={batchId}
               onChange={
                 handleBatchChange
@@ -688,7 +689,7 @@ function CenterMonitoringFilters({
                 )
               )}
 
-            </select>
+            </SearchableSelect>
 
           </div>
         )}
@@ -704,7 +705,7 @@ function CenterMonitoringFilters({
             District
           </label>
 
-          <select
+          <SearchableSelect
             value={districtId}
             onChange={
               handleDistrictChange
@@ -742,7 +743,7 @@ function CenterMonitoringFilters({
               )
             )}
 
-          </select>
+          </SearchableSelect>
 
         </div>
 

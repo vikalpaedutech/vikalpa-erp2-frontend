@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import {
   useEffect,
   useMemo,
@@ -831,7 +832,7 @@ function ClassInteractionReport() {
               Program
             </label>
 
-            <select
+            <SearchableSelect
               value={
                 programId
               }
@@ -874,7 +875,7 @@ function ClassInteractionReport() {
                 )
               )}
 
-            </select>
+            </SearchableSelect>
 
           </div>
 
@@ -889,7 +890,7 @@ function ClassInteractionReport() {
               Batch
             </label>
 
-            <select
+            <SearchableSelect
               value={
                 batchId
               }
@@ -932,7 +933,7 @@ function ClassInteractionReport() {
                 )
               )}
 
-            </select>
+            </SearchableSelect>
 
           </div>
 
@@ -999,7 +1000,7 @@ function ClassInteractionReport() {
               Type
             </label>
 
-            <select
+            <SearchableSelect
               value={
                 recordType
               }
@@ -1038,7 +1039,7 @@ function ClassInteractionReport() {
                 )
               )}
 
-            </select>
+            </SearchableSelect>
 
           </div>
 
@@ -1053,7 +1054,7 @@ function ClassInteractionReport() {
               Subject
             </label>
 
-            <select
+            <SearchableSelect
               value={
                 subject
               }
@@ -1086,7 +1087,7 @@ function ClassInteractionReport() {
                 )
               )}
 
-            </select>
+            </SearchableSelect>
 
           </div>
 
@@ -1101,7 +1102,7 @@ function ClassInteractionReport() {
               Status
             </label>
 
-            <select
+            <SearchableSelect
               value={
                 status
               }
@@ -1134,7 +1135,7 @@ function ClassInteractionReport() {
                 )
               )}
 
-            </select>
+            </SearchableSelect>
 
           </div>
 

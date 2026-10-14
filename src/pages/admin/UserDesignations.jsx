@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 
 import { getUsers } from "../../services/user.service";
@@ -618,7 +619,7 @@ function UserDesignations() {
                     Department
                   </label>
 
-                  <select
+                  <SearchableSelect
                     value={selectedDepartment}
                     onChange={handleDepartmentChange}
                     disabled={loadingDepartments}
@@ -644,7 +645,7 @@ function UserDesignations() {
                       )
                     )}
 
-                  </select>
+                  </SearchableSelect>
 
                 </div>
 
@@ -656,7 +657,7 @@ function UserDesignations() {
                     Designation
                   </label>
 
-                  <select
+                  <SearchableSelect
                     value={selectedDesignation}
                     onChange={(e) =>
                       setSelectedDesignation(
@@ -694,7 +695,7 @@ function UserDesignations() {
                       )
                     )}
 
-                  </select>
+                  </SearchableSelect>
 
                 </div>
 

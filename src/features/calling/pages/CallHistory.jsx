@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import CallLogTable from "../components/CallLogTable";
@@ -230,7 +231,7 @@ const CallHistory = () => {
                             Calling Type
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={
                                 callingTypeId
                             }
@@ -262,7 +263,7 @@ const CallHistory = () => {
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -274,7 +275,7 @@ const CallHistory = () => {
                             Calling Status
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={
                                 callingStatus
                             }
@@ -301,7 +302,7 @@ const CallHistory = () => {
                                 Wrong Number
                             </option>
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 

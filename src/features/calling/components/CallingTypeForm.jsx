@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -361,7 +362,7 @@ const CallingTypeForm = ({
                         Status
                     </label>
 
-                    <select
+                    <SearchableSelect
                         name="isActive"
                         value={
                             formData.isActive
@@ -387,7 +388,7 @@ const CallingTypeForm = ({
                         <option value="false">
                             Inactive
                         </option>
-                    </select>
+                    </SearchableSelect>
                 </div>
             </div>
 

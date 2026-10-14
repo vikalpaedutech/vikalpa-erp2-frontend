@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -254,7 +255,7 @@ function LeaveApprovalRules() {
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Department
               </label>
-              <select
+              <SearchableSelect
                 name="departmentId"
                 value={form.departmentId}
                 onChange={handleChange}
@@ -266,14 +267,14 @@ function LeaveApprovalRules() {
                     {department.departmentName}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Employee Designation
               </label>
-              <select
+              <SearchableSelect
                 name="designationId"
                 value={form.designationId}
                 onChange={handleChange}
@@ -285,14 +286,14 @@ function LeaveApprovalRules() {
                     {designation.designation}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Approver
               </label>
-              <select
+              <SearchableSelect
                 name="approverId"
                 value={form.approverId}
                 onChange={handleChange}
@@ -304,7 +305,7 @@ function LeaveApprovalRules() {
                     {user.name} {user.userId ? `(${user.userId})` : ""}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div>

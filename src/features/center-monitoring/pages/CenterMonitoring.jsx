@@ -262,10 +262,10 @@ function CenterMonitoring() {
     return [...centers].sort(
       (a, b) =>
         String(
-          a?.districtId?.districtName || ""
+          a?.districtName || a?.districtId?.districtName || ""
         ).localeCompare(
           String(
-            b?.districtId?.districtName || ""
+            b?.districtName || b?.districtId?.districtName || ""
           ),
           undefined,
           {
@@ -397,9 +397,20 @@ function CenterMonitoring() {
           });
 
 
-        setCenters(
-          response?.data || []
-        );
+        // The API currently returns flat IDs/names (centerId, districtId,
+        // districtName), while this page historically expected populated
+        // Mongo references (_id and districtId.districtName). Normalize both
+        // response shapes so the action buttons always receive a real center ID.
+        const normalizedCenters = (response?.data || []).map((item) => ({
+          ...item,
+          _id: item?._id || item?.centerId || "",
+          centerId: item?.centerId || item?._id || "",
+          districtId: item?.districtId?._id || item?.districtId || "",
+          districtName: item?.districtName || item?.districtId?.districtName || "",
+          blockId: item?.blockId?._id || item?.blockId || "",
+          blockName: item?.blockName || item?.blockId?.blockName || "",
+        }));
+        setCenters(normalizedCenters);
 
 
         if (preserveScroll) {
@@ -1050,7 +1061,7 @@ function CenterMonitoring() {
                   ) => {
 
                     const centerId =
-                      center?._id;
+                      center?._id || center?.centerId;
 
                     const counts =
                       center?.counts ||
@@ -1087,9 +1098,8 @@ function CenterMonitoring() {
                         <td className="whitespace-nowrap px-4 py-4 font-medium text-gray-700">
 
                           {
-                            center
-                              ?.districtId
-                              ?.districtName ||
+                            center?.districtName ||
+                            center?.districtId?.districtName ||
                             "-"
                           }
 

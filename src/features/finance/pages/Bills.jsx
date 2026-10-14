@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 // // // frontend/src/features/finance/pages/Bills.jsx
 
 // // import { useEffect, useState } from "react";
@@ -519,7 +520,7 @@
 // //                                     Status
 // //                                 </label>
 
-// //                                 <select
+// //                                 <SearchableSelect
 // //                                     name="status"
 // //                                     value={
 // //                                         filters.status
@@ -547,7 +548,7 @@
 // //                                             </option>
 // //                                         )
 // //                                     )}
-// //                                 </select>
+// //                                 </SearchableSelect>
 // //                             </div>
 
 // //                             {/* Buttons */}
@@ -1443,7 +1444,7 @@
 //                             Status
 //                         </label>
 
-//                         <select
+//                         <SearchableSelect
 //                             value={
 //                                 status
 //                             }
@@ -1488,7 +1489,7 @@
 //                             <option value="rejected">
 //                                 Rejected
 //                             </option>
-//                         </select>
+//                         </SearchableSelect>
 //                     </div>
 
 
@@ -2349,7 +2350,7 @@ const Bills = () => {
                             Status
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={
                                 status
                             }
@@ -2391,7 +2392,7 @@ const Bills = () => {
                             <option value="rejected">
                                 Rejected
                             </option>
-                        </select>
+                        </SearchableSelect>
                     </div>
 
 

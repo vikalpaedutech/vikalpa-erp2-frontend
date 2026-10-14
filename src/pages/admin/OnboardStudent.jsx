@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -486,7 +487,7 @@ function OnboardStudent() {
                 Gender
               </label>
 
-              <select
+              <SearchableSelect
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
@@ -507,7 +508,7 @@ function OnboardStudent() {
                 <option value="other">
                   Other
                 </option>
-              </select>
+              </SearchableSelect>
             </div>
 
             <div>
@@ -633,7 +634,7 @@ function OnboardStudent() {
                 Program *
               </label>
 
-              <select
+              <SearchableSelect
                 name="programId"
                 value={formData.programId}
                 onChange={handleChange}
@@ -653,7 +654,7 @@ function OnboardStudent() {
                     {program.programName}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             {/* Batch */}
@@ -663,7 +664,7 @@ function OnboardStudent() {
                 Batch *
               </label>
 
-              <select
+              <SearchableSelect
                 name="batchId"
                 value={formData.batchId}
                 onChange={handleChange}
@@ -683,7 +684,7 @@ function OnboardStudent() {
                     {batch.batchName}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             {/* District */}
@@ -693,7 +694,7 @@ function OnboardStudent() {
                 District *
               </label>
 
-              <select
+              <SearchableSelect
                 name="districtId"
                 value={formData.districtId}
                 onChange={handleDistrictChange}
@@ -713,7 +714,7 @@ function OnboardStudent() {
                     {district.districtName}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             {/* Block */}
@@ -723,7 +724,7 @@ function OnboardStudent() {
                 Block *
               </label>
 
-              <select
+              <SearchableSelect
                 name="blockId"
                 value={formData.blockId}
                 onChange={handleBlockChange}
@@ -743,7 +744,7 @@ function OnboardStudent() {
                     {block.blockName}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             {/* Center */}
@@ -753,7 +754,7 @@ function OnboardStudent() {
                 Center *
               </label>
 
-              <select
+              <SearchableSelect
                 name="centerId"
                 value={formData.centerId}
                 onChange={handleChange}
@@ -773,7 +774,7 @@ function OnboardStudent() {
                     {center.centerName}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             {/* Class */}
@@ -783,7 +784,7 @@ function OnboardStudent() {
                 Class *
               </label>
 
-              <select
+              <SearchableSelect
                 name="class"
                 value={formData.class}
                 onChange={handleChange}
@@ -809,7 +810,7 @@ function OnboardStudent() {
                 <option value="12">
                   12
                 </option>
-              </select>
+              </SearchableSelect>
             </div>
 
             {/* Board */}
@@ -854,7 +855,7 @@ function OnboardStudent() {
                 Enrollment Status
               </label>
 
-              <select
+              <SearchableSelect
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
@@ -891,7 +892,7 @@ function OnboardStudent() {
                 <option value="transfer-student">
                   Transfer Student
                 </option>
-              </select>
+              </SearchableSelect>
             </div>
           </div>
 

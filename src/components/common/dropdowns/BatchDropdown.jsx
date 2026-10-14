@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import Select from "react-select";
 import { useRegionAccess } from "../../../context/RegionAccessContext";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -63,23 +64,18 @@ function BatchDropdown({
         {label}
         {required && <span className="ml-1 text-red-500">*</span>}
       </label>
-      <select
-        value={value}
-        onChange={(event) => onChange?.(event.target.value)}
-        disabled={disabled}
-        required={required}
-        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100"
-      >
-        <option value="">{placeholder}</option>
-        {availableBatches.map((batch) => (
-          <option key={batch._id} value={batch._id}>
-            {batch.batchName}
-            {batch.startYear && batch.endYear
-              ? ` (${batch.startYear}-${batch.endYear})`
-              : ""}
-          </option>
-        ))}
-      </select>
+      <Select
+        options={[...availableBatches].sort((a,b) => String(a.batchName || "").localeCompare(String(b.batchName || ""), undefined, { sensitivity: "base" })).map((batch) => ({ value: String(batch._id), label: `${batch.batchName || batch.name || ""}${batch.startYear && batch.endYear ? ` (${batch.startYear}-${batch.endYear})` : ""}` }))}
+        value={[...availableBatches].map((batch) => ({ value: String(batch._id), label: `${batch.batchName || batch.name || ""}${batch.startYear && batch.endYear ? ` (${batch.startYear}-${batch.endYear})` : ""}` })).find((option) => option.value === String(value)) || null}
+        onChange={(option) => onChange?.(option?.value || "")}
+        isClearable={!required}
+        isSearchable
+        placeholder={placeholder}
+        isDisabled={disabled}
+        className="text-sm"
+        classNamePrefix="react-select"
+        noOptionsMessage={() => "No batches found"}
+      />
     </div>
   );
 }

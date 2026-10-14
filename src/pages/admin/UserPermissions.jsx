@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 import { getUsers } from "../../services/user.service";
 import { getPermissions } from "../../services/permission.service";
@@ -29,7 +30,7 @@ export default function UserPermissions() {
       setLoading(true);
       setError("");
       const [permissionResponse, roleResponse] = await Promise.all([
-        getPermissions({ page: 1, limit: 500, isActive: "true" }),
+        getPermissions({ page: 1, limit: 1000, isActive: "true" }),
         getRoles({ page: 1, limit: 100, isActive: "true" }),
       ]);
       setPermissions(permissionResponse.data?.permissions || []);
@@ -121,10 +122,10 @@ export default function UserPermissions() {
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-5 lg:flex-row lg:items-end">
           <label className="w-full lg:max-w-xs text-xs font-black uppercase tracking-wider text-slate-500">Role Filter
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium normal-case text-slate-800">
+            <SearchableSelect value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium normal-case text-slate-800">
               <option value="all">All active roles</option>
               {roleOptions.map((role) => <option key={role._id} value={role._id}>{role.roleName} ({role.roleCode})</option>)}
-            </select>
+            </SearchableSelect>
           </label>
           <label className="flex-1 text-xs font-black uppercase tracking-wider text-slate-500">Search
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, user ID or contact..." className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium normal-case outline-none focus:border-indigo-400" />

@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -236,7 +237,7 @@ function Permissions() {
             className="border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
           />
 
-          <select
+          <SearchableSelect
             value={moduleFilter}
             onChange={(e) =>
               setModuleFilter(e.target.value)
@@ -250,9 +251,9 @@ function Permissions() {
                 {module}
               </option>
             ))}
-          </select>
+          </SearchableSelect>
 
-          <select
+          <SearchableSelect
             value={actionFilter}
             onChange={(e) =>
               setActionFilter(e.target.value)
@@ -266,7 +267,7 @@ function Permissions() {
                 {action}
               </option>
             ))}
-          </select>
+          </SearchableSelect>
 
           <button
             onClick={clearFilters}

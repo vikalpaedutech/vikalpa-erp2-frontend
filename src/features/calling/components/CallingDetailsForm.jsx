@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -1036,7 +1037,7 @@ const CallingDetailsForm = ({
                             Calling Type
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="callingTypeId"
                             value={
                                 formData.callingTypeId
@@ -1068,7 +1069,7 @@ const CallingDetailsForm = ({
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -1121,7 +1122,7 @@ const CallingDetailsForm = ({
                             Student
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="studentId"
                             value={
                                 formData.studentId
@@ -1162,7 +1163,7 @@ const CallingDetailsForm = ({
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -1174,7 +1175,7 @@ const CallingDetailsForm = ({
                             Enrollment
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="enrollmentId"
                             value={
                                 formData.enrollmentId
@@ -1225,7 +1226,7 @@ const CallingDetailsForm = ({
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -1360,7 +1361,7 @@ const CallingDetailsForm = ({
                             District
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="calledDistrict"
                             value={
                                 formData.calledDistrict
@@ -1396,7 +1397,7 @@ const CallingDetailsForm = ({
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -1408,7 +1409,7 @@ const CallingDetailsForm = ({
                             Block
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="calledBlock"
                             value={
                                 formData.calledBlock
@@ -1447,7 +1448,7 @@ const CallingDetailsForm = ({
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -1459,7 +1460,7 @@ const CallingDetailsForm = ({
                             Center
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="calledCenter"
                             value={
                                 formData.calledCenter
@@ -1501,7 +1502,7 @@ const CallingDetailsForm = ({
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -1597,7 +1598,7 @@ const CallingDetailsForm = ({
                             Calling Status
                         </label>
 
-                        <select
+                        <SearchableSelect
                             name="callingStatus"
                             value={
                                 formData.callingStatus
@@ -1631,7 +1632,7 @@ const CallingDetailsForm = ({
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -1645,7 +1646,7 @@ const CallingDetailsForm = ({
 
                         {availableRemarks.length >
                         0 ? (
-                            <select
+                            <SearchableSelect
                                 name="remark"
                                 value={
                                     formData.remark
@@ -1678,7 +1679,7 @@ const CallingDetailsForm = ({
                                     )
                                 )}
 
-                            </select>
+                            </SearchableSelect>
                         ) : (
                             <input
                                 type="text"

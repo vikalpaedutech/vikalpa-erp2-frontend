@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import {
   useEffect,
   useMemo,
@@ -1279,7 +1280,7 @@ function ClassInteractionStatusCard({
               </span>
             </label>
 
-            <select
+            <SearchableSelect
               value={subject}
               onChange={(event) => {
                 setSubject(
@@ -1314,7 +1315,7 @@ function ClassInteractionStatusCard({
                 )
               )}
 
-            </select>
+            </SearchableSelect>
 
           </div>
 

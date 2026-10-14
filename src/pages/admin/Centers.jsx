@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 import {
   getCenters,
@@ -422,7 +423,7 @@ function Centers() {
               Filter by District
             </label>
 
-            <select
+            <SearchableSelect
               value={selectedDistrict}
               onChange={handleDistrictFilterChange}
               className="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -442,7 +443,7 @@ function Centers() {
                     : ""}
                 </option>
               ))}
-            </select>
+            </SearchableSelect>
           </div>
 
           {/* Block Filter */}
@@ -451,7 +452,7 @@ function Centers() {
               Filter by Block
             </label>
 
-            <select
+            <SearchableSelect
               value={selectedBlock}
               onChange={handleBlockFilterChange}
               disabled={!selectedDistrict}
@@ -472,7 +473,7 @@ function Centers() {
                     : ""}
                 </option>
               ))}
-            </select>
+            </SearchableSelect>
           </div>
         </div>
       </div>
@@ -664,7 +665,7 @@ function Centers() {
                   District
                 </label>
 
-                <select
+                <SearchableSelect
                   name="districtId"
                   value={formData.districtId}
                   onChange={handleFormDistrictChange}
@@ -686,7 +687,7 @@ function Centers() {
                         : ""}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Block */}
@@ -695,7 +696,7 @@ function Centers() {
                   Block
                 </label>
 
-                <select
+                <SearchableSelect
                   name="blockId"
                   value={formData.blockId}
                   onChange={handleInputChange}
@@ -720,7 +721,7 @@ function Centers() {
                         : ""}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Center Code */}
@@ -763,7 +764,7 @@ function Centers() {
                   Center Availability
                 </label>
 
-                <select
+                <SearchableSelect
                   name="isCenterAvailable"
                   value={
                     formData.isCenterAvailable
@@ -786,7 +787,7 @@ function Centers() {
                   <option value="false">
                     Unavailable
                   </option>
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Available Classes */}
@@ -900,7 +901,7 @@ function Centers() {
                   District
                 </label>
 
-                <select
+                <SearchableSelect
                   name="districtId"
                   value={formData.districtId}
                   onChange={handleFormDistrictChange}
@@ -922,7 +923,7 @@ function Centers() {
                         : ""}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Block */}
@@ -931,7 +932,7 @@ function Centers() {
                   Block
                 </label>
 
-                <select
+                <SearchableSelect
                   name="blockId"
                   value={formData.blockId}
                   onChange={handleInputChange}
@@ -956,7 +957,7 @@ function Centers() {
                         : ""}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Center Code */}
@@ -997,7 +998,7 @@ function Centers() {
                   Center Availability
                 </label>
 
-                <select
+                <SearchableSelect
                   value={
                     formData.isCenterAvailable
                       ? "true"
@@ -1019,7 +1020,7 @@ function Centers() {
                   <option value="false">
                     Unavailable
                   </option>
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Available Classes */}

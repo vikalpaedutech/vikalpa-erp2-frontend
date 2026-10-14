@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -208,7 +209,7 @@ function Roles() {
             className="border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
           />
 
-          <select
+          <SearchableSelect
             value={statusFilter}
             onChange={(e) =>
               setStatusFilter(e.target.value)
@@ -218,7 +219,7 @@ function Roles() {
             <option value="">All Status</option>
             <option value="true">Active</option>
             <option value="false">Inactive</option>
-          </select>
+          </SearchableSelect>
 
           <button
             onClick={clearFilters}

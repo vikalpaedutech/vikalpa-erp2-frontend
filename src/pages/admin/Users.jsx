@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -333,7 +334,7 @@ function Users() {
             className="flex-1 border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
           />
 
-          <select
+          <SearchableSelect
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
@@ -352,7 +353,7 @@ function Users() {
             <option value="false">
               Inactive
             </option>
-          </select>
+          </SearchableSelect>
 
           <button
             type="submit"

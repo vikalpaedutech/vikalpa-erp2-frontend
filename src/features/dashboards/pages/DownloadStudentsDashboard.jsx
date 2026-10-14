@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 import { downloadStudentsDashboard, getDownloadStudentsOptions } from "../services/dashboard.service";
 import { DashboardHeader, ErrorBox, ExportButton, ProgramBatchFilters, RegionFilters, DateInput, today, useDashboardOptions } from "../components/dashboardCommon";
@@ -30,7 +31,7 @@ export default function DownloadStudentsDashboard() {
     <ProgramBatchFilters filters={filters} setFilters={setFilters} options={options} mandatory onApply={() => {}} />
     <RegionFilters filters={filters} setFilters={setFilters} options={options} />
     <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2 xl:grid-cols-4">
-      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Type of Data<select value={filters.type} onChange={(e) => setFilters((x) => ({ ...x, type: e.target.value }))} className="mt-1.5 w-full rounded-xl border px-3 py-2.5 text-sm normal-case text-slate-800">{meta.types.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}</select></label>
+      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Type of Data<SearchableSelect value={filters.type} onChange={(e) => setFilters((x) => ({ ...x, type: e.target.value }))} className="mt-1.5 w-full rounded-xl border px-3 py-2.5 text-sm normal-case text-slate-800">{meta.types.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}</SearchableSelect></label>
       <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">SRN (optional)<input value={filters.srn} onChange={(e) => setFilters((x) => ({ ...x, srn: e.target.value }))} placeholder="Enter SRN" className="mt-1.5 w-full rounded-xl border px-3 py-2.5 text-sm normal-case" /></label>
       <DateInput label="From" value={filters.from} onChange={(v) => setFilters((x) => ({ ...x, from: v }))} />
       <DateInput label="To" value={filters.to} onChange={(v) => setFilters((x) => ({ ...x, to: v }))} />

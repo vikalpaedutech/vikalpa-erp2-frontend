@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getDashboardOptions } from "../services/dashboard.service";
@@ -121,9 +122,9 @@ export function DateRangeFilters({ filters, setFilters, onApply }) {
 }
 
 export function Select({ label, value, onChange, options = [], valueKey = "_id", labelKey, placeholder }) {
-  return <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">{label}<select value={value || ""} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case text-slate-800 outline-none focus:border-indigo-400">
+  return <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">{label}<SearchableSelect value={value || ""} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case text-slate-800 outline-none focus:border-indigo-400">
     <option value="">{placeholder || `Select ${label}`}</option>{options.map((x) => <option key={x[valueKey]} value={x[valueKey]}>{x[labelKey] || x.name || x.label}</option>)}
-  </select></label>;
+  </SearchableSelect></label>;
 }
 
 export function DateInput({ label, value, onChange }) {

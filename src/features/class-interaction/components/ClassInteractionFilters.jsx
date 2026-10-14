@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo } from "react";
 
 import ProgramDropdown from "../../../components/common/dropdowns/ProgramDropdown";
@@ -185,7 +186,7 @@ function ClassInteractionFilters({
             </span>
           </label>
 
-          <select
+          <SearchableSelect
             value={subject}
             onChange={(event) =>
               onSubjectChange?.(
@@ -210,7 +211,7 @@ function ClassInteractionFilters({
                 </option>
               )
             )}
-          </select>
+          </SearchableSelect>
         </div>
 
         {/* Date */}

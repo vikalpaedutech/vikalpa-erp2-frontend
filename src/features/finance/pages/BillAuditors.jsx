@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -629,7 +630,7 @@ const BillAuditors = () => {
                                     User
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="userId"
                                     value={form.userId}
                                     onChange={handleChange}
@@ -657,7 +658,7 @@ const BillAuditors = () => {
                                                 : ""}
                                         </option>
                                     ))}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* Role Access */}
@@ -666,7 +667,7 @@ const BillAuditors = () => {
                                     Role Access
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="roleAccess"
                                     value={form.roleAccess}
                                     onChange={handleChange}
@@ -675,7 +676,7 @@ const BillAuditors = () => {
                                     <option value="CC">CC</option>
                                     <option value="ACI">ACI</option>
                                     <option value="CM">CM</option>
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* Action */}
@@ -684,7 +685,7 @@ const BillAuditors = () => {
                                     Action
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="action"
                                     value={form.action}
                                     onChange={handleChange}
@@ -697,7 +698,7 @@ const BillAuditors = () => {
                                     <option value="approve">
                                         Approve
                                     </option>
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* Region Scope */}
@@ -706,7 +707,7 @@ const BillAuditors = () => {
                                     Region Scope
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="regionScope"
                                     value={form.regionScope}
                                     onChange={
@@ -729,7 +730,7 @@ const BillAuditors = () => {
                                     <option value="center">
                                         Center
                                     </option>
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* District */}
@@ -739,7 +740,7 @@ const BillAuditors = () => {
                                         District
                                     </label>
 
-                                    <select
+                                    <SearchableSelect
                                         name="districtId"
                                         value={form.districtId}
                                         onChange={
@@ -772,7 +773,7 @@ const BillAuditors = () => {
                                                 </option>
                                             )
                                         )}
-                                    </select>
+                                    </SearchableSelect>
                                 </div>
                             )}
 
@@ -784,7 +785,7 @@ const BillAuditors = () => {
                                         Block
                                     </label>
 
-                                    <select
+                                    <SearchableSelect
                                         name="blockId"
                                         value={form.blockId}
                                         onChange={
@@ -814,7 +815,7 @@ const BillAuditors = () => {
                                                 }
                                             </option>
                                         ))}
-                                    </select>
+                                    </SearchableSelect>
                                 </div>
                             )}
 
@@ -825,7 +826,7 @@ const BillAuditors = () => {
                                         Center
                                     </label>
 
-                                    <select
+                                    <SearchableSelect
                                         name="centerId"
                                         value={form.centerId}
                                         onChange={handleChange}
@@ -862,7 +863,7 @@ const BillAuditors = () => {
                                                 </option>
                                             )
                                         )}
-                                    </select>
+                                    </SearchableSelect>
                                 </div>
                             )}
 

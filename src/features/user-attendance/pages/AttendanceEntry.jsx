@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import {
   useEffect,
   useMemo,
@@ -447,7 +448,7 @@ function AttendanceEntry() {
                   <label className="mb-2 block text-sm font-semibold text-gray-700">
                     Select another attendance type
                   </label>
-                  <select
+                  <SearchableSelect
                     value={attendanceType}
                     onChange={(event) =>
                       handleAttendanceTypeChange(event.target.value)
@@ -459,7 +460,7 @@ function AttendanceEntry() {
                         {type}
                       </option>
                     ))}
-                  </select>
+                  </SearchableSelect>
                 </div>
               )}
 
@@ -523,7 +524,7 @@ function AttendanceEntry() {
                   Attendance Type
                 </label>
 
-                <select
+                <SearchableSelect
                   value={attendanceType}
                   onChange={(event) =>
                     handleAttendanceTypeChange(event.target.value)
@@ -536,7 +537,7 @@ function AttendanceEntry() {
                       {type}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
             ) : (
               <div className="mb-6 rounded-xl bg-indigo-50 px-4 py-3 text-center">

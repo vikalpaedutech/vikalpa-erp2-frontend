@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import {
   useEffect,
   useMemo,
@@ -1831,7 +1832,7 @@ function AccessBasedAttendance() {
                 Role
               </label>
 
-              <select
+              <SearchableSelect
                 value={
                   selectedRole
                 }
@@ -1869,7 +1870,7 @@ function AccessBasedAttendance() {
                   )
                 )}
 
-              </select>
+              </SearchableSelect>
 
             </div>
 
@@ -1881,7 +1882,7 @@ function AccessBasedAttendance() {
                 District
               </label>
 
-              <select
+              <SearchableSelect
                 value={
                   selectedDistrict
                 }
@@ -1915,7 +1916,7 @@ function AccessBasedAttendance() {
                   )
                 )}
 
-              </select>
+              </SearchableSelect>
 
             </div>
 
@@ -1927,7 +1928,7 @@ function AccessBasedAttendance() {
                 Attendance Type
               </label>
 
-              <select
+              <SearchableSelect
                 value={
                   attendanceType
                 }
@@ -1974,7 +1975,7 @@ function AccessBasedAttendance() {
                   )
                 )}
 
-              </select>
+              </SearchableSelect>
 
             </div>
 
@@ -1986,7 +1987,7 @@ function AccessBasedAttendance() {
                 Status
               </label>
 
-              <select
+              <SearchableSelect
                 value={
                   status
                 }
@@ -2019,7 +2020,7 @@ function AccessBasedAttendance() {
                   Leave
                 </option>
 
-              </select>
+              </SearchableSelect>
 
             </div>
 
@@ -2031,7 +2032,7 @@ function AccessBasedAttendance() {
                 Source
               </label>
 
-              <select
+              <SearchableSelect
                 value={
                   attendanceSource
                 }
@@ -2060,7 +2061,7 @@ function AccessBasedAttendance() {
                   System
                 </option>
 
-              </select>
+              </SearchableSelect>
 
             </div>
 
@@ -2628,7 +2629,7 @@ function AccessBasedAttendance() {
                     Attendance Type *
                   </label>
 
-                  <select
+                  <SearchableSelect
                     name="attendanceType"
                     value={
                       form.attendanceType
@@ -2669,7 +2670,7 @@ function AccessBasedAttendance() {
                       )
                     )}
 
-                  </select>
+                  </SearchableSelect>
 
                 </div>
 
@@ -2681,7 +2682,7 @@ function AccessBasedAttendance() {
                     Status *
                   </label>
 
-                  <select
+                  <SearchableSelect
                     name="status"
                     value={
                       form.status
@@ -2704,7 +2705,7 @@ function AccessBasedAttendance() {
                       Absent
                     </option>
 
-                  </select>
+                  </SearchableSelect>
 
                 </div>
 

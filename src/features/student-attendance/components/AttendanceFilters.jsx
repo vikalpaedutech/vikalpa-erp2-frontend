@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 // src/features/student-attendance/components/AttendanceFilters.jsx
 
 import React from "react";
@@ -114,7 +115,7 @@ function AttendanceFilters({
                             Program
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={programId}
                             onChange={(event) =>
                                 onProgramChange(
@@ -143,7 +144,7 @@ function AttendanceFilters({
                                     </option>
                                 )
                             )}
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 
@@ -156,7 +157,7 @@ function AttendanceFilters({
                         Batch
                     </label>
 
-                    <select
+                    <SearchableSelect
                         value={batchId}
                         onChange={(event) =>
                             onBatchChange(
@@ -185,7 +186,7 @@ function AttendanceFilters({
                                 </option>
                             )
                         )}
-                    </select>
+                    </SearchableSelect>
                 </div>
 
                 {/* ==================================================
@@ -198,7 +199,7 @@ function AttendanceFilters({
                             District
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={districtId}
                             onChange={(event) =>
                                 onDistrictChange(
@@ -227,7 +228,7 @@ function AttendanceFilters({
                                     </option>
                                 )
                             )}
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 
@@ -241,7 +242,7 @@ function AttendanceFilters({
                             Block
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={blockId}
                             onChange={(event) =>
                                 onBlockChange(
@@ -279,7 +280,7 @@ function AttendanceFilters({
                                     </option>
                                 )
                             )}
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 
@@ -293,7 +294,7 @@ function AttendanceFilters({
                             Center
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={centerId}
                             onChange={(event) =>
                                 onCenterChange(
@@ -331,7 +332,7 @@ function AttendanceFilters({
                                     </option>
                                 )
                             )}
-                        </select>
+                        </SearchableSelect>
                     </div>
                 )}
 

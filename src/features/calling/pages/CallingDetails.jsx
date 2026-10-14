@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import CallingDetailsTable from "../components/CallingDetailsTable";
@@ -697,7 +698,7 @@ const CallingDetails = () => {
                             Calling Type
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={
                                 selectedCallingType
                             }
@@ -733,7 +734,7 @@ const CallingDetails = () => {
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -860,7 +861,7 @@ const CallingDetails = () => {
                             Calling Type
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={
                                 selectedCallingType
                             }
@@ -892,7 +893,7 @@ const CallingDetails = () => {
                                 )
                             )}
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 
@@ -905,7 +906,7 @@ const CallingDetails = () => {
                             Calling Status
                         </label>
 
-                        <select
+                        <SearchableSelect
                             value={
                                 callingStatus
                             }
@@ -932,7 +933,7 @@ const CallingDetails = () => {
                                 Wrong Number
                             </option>
 
-                        </select>
+                        </SearchableSelect>
 
                     </div>
 

@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -651,7 +652,7 @@ function Designations() {
                   Department
                 </label>
 
-                <select
+                <SearchableSelect
                   name="departmentId"
                   value={
                     formData.departmentId
@@ -686,7 +687,7 @@ function Designations() {
 
                     ))}
 
-                </select>
+                </SearchableSelect>
 
               </div>
 

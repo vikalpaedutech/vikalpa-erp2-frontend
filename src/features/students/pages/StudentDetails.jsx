@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 // FILE PATH: C:\Users\shubh\OneDrive\Desktop\vikalpaerpv2\frontend\src\features\students\pages\StudentDetails.jsx
 
 import { useEffect, useState } from "react";
@@ -678,7 +679,7 @@ const StudentDetails = () => {
                                     District
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="districtId"
                                     value={
                                         transferData.districtId
@@ -711,7 +712,7 @@ const StudentDetails = () => {
                                             </option>
                                         )
                                     )}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* Block */}
@@ -720,7 +721,7 @@ const StudentDetails = () => {
                                     Block
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="blockId"
                                     value={
                                         transferData.blockId
@@ -754,7 +755,7 @@ const StudentDetails = () => {
                                             </option>
                                         )
                                     )}
-                                </select>
+                                </SearchableSelect>
                             </div>
 
                             {/* Center */}
@@ -763,7 +764,7 @@ const StudentDetails = () => {
                                     Center
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     name="centerId"
                                     value={
                                         transferData.centerId
@@ -797,7 +798,7 @@ const StudentDetails = () => {
                                             </option>
                                         )
                                     )}
-                                </select>
+                                </SearchableSelect>
                             </div>
                         </div>
 

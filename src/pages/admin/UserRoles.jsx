@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import { getUsers } from "../../services/user.service";
@@ -504,7 +505,7 @@ function UserRoles() {
 
                 <div className="flex gap-3">
 
-                  <select
+                  <SearchableSelect
                     value={selectedRole}
                     onChange={(e) =>
                       setSelectedRole(e.target.value)
@@ -533,7 +534,7 @@ function UserRoles() {
 
                     ))}
 
-                  </select>
+                  </SearchableSelect>
 
 
                   <button

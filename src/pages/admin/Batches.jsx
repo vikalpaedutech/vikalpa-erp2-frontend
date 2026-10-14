@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 import {
   getBatches,
@@ -478,7 +479,7 @@ function Batches() {
                   Program
                 </label>
 
-                <select
+                <SearchableSelect
                   name="programId"
                   value={formData.programId}
                   onChange={handleInputChange}
@@ -498,7 +499,7 @@ function Batches() {
                       {program.programCode})
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Batch Name */}
@@ -625,7 +626,7 @@ function Batches() {
                   Program
                 </label>
 
-                <select
+                <SearchableSelect
                   name="programId"
                   value={formData.programId}
                   onChange={handleInputChange}
@@ -645,7 +646,7 @@ function Batches() {
                       {program.programCode})
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               {/* Batch Name */}

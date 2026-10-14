@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useState } from "react";
 
 import {
@@ -342,7 +343,7 @@ function StudentRequests() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
           {/* Request Type */}
 
-          <select
+          <SearchableSelect
             value={requestType}
             onChange={(event) =>
               setRequestType(event.target.value)
@@ -368,11 +369,11 @@ function StudentRequests() {
             <option value="transfer-student">
               Transfer Student
             </option>
-          </select>
+          </SearchableSelect>
 
           {/* Status */}
 
-          <select
+          <SearchableSelect
             value={status}
             onChange={(event) =>
               setStatus(event.target.value)
@@ -402,7 +403,7 @@ function StudentRequests() {
             <option value="completed">
               Completed
             </option>
-          </select>
+          </SearchableSelect>
 
           {/* From Date */}
 

@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -1738,7 +1739,7 @@ const BillDashboard = () => {
                                 Status
                             </label>
 
-                            <select
+                            <SearchableSelect
                                 name="status"
                                 value={
                                     filters.status
@@ -1779,7 +1780,7 @@ const BillDashboard = () => {
                                 <option value="rejected">
                                     Rejected
                                 </option>
-                            </select>
+                            </SearchableSelect>
                         </div>
 
 
@@ -1790,7 +1791,7 @@ const BillDashboard = () => {
                                 Submitted By Role
                             </label>
 
-                            <select
+                            <SearchableSelect
                                 name="submittedByRole"
                                 value={
                                     filters.submittedByRole
@@ -1815,7 +1816,7 @@ const BillDashboard = () => {
                                 <option value="cm">
                                     CM
                                 </option>
-                            </select>
+                            </SearchableSelect>
                         </div>
 
 
@@ -1826,7 +1827,7 @@ const BillDashboard = () => {
                                 Submitted By
                             </label>
 
-                            <select
+                            <SearchableSelect
                                 name="submittedBy"
                                 value={
                                     filters.submittedBy
@@ -1860,7 +1861,7 @@ const BillDashboard = () => {
                                         </option>
                                     )
                                 )}
-                            </select>
+                            </SearchableSelect>
                         </div>
 
 
@@ -1871,7 +1872,7 @@ const BillDashboard = () => {
                                 Workflow Action
                             </label>
 
-                            <select
+                            <SearchableSelect
                                 name="action"
                                 value={
                                     filters.action
@@ -1892,7 +1893,7 @@ const BillDashboard = () => {
                                 <option value="approve">
                                     Approval
                                 </option>
-                            </select>
+                            </SearchableSelect>
                         </div>
 
 
@@ -1903,7 +1904,7 @@ const BillDashboard = () => {
                                 District
                             </label>
 
-                            <select
+                            <SearchableSelect
                                 name="districtId"
                                 value={
                                     filters.districtId
@@ -1934,7 +1935,7 @@ const BillDashboard = () => {
                                         </option>
                                     )
                                 )}
-                            </select>
+                            </SearchableSelect>
                         </div>
 
 
@@ -1945,7 +1946,7 @@ const BillDashboard = () => {
                                 Block
                             </label>
 
-                            <select
+                            <SearchableSelect
                                 name="blockId"
                                 value={
                                     filters.blockId
@@ -1979,7 +1980,7 @@ const BillDashboard = () => {
                                         </option>
                                     )
                                 )}
-                            </select>
+                            </SearchableSelect>
                         </div>
 
 
@@ -1990,7 +1991,7 @@ const BillDashboard = () => {
                                 Center
                             </label>
 
-                            <select
+                            <SearchableSelect
                                 name="centerId"
                                 value={
                                     filters.centerId
@@ -2024,7 +2025,7 @@ const BillDashboard = () => {
                                         </option>
                                     )
                                 )}
-                            </select>
+                            </SearchableSelect>
                         </div>
 
 
@@ -2357,7 +2358,7 @@ const BillDashboard = () => {
                                     </span>
                                 </label>
 
-                                <select
+                                <SearchableSelect
                                     value={
                                         bulkPaymentData.paymentMode
                                     }
@@ -2402,7 +2403,7 @@ const BillDashboard = () => {
                                         Other
                                     </option>
 
-                                </select>
+                                </SearchableSelect>
 
                             </div>
                         )}
@@ -2581,7 +2582,7 @@ const BillDashboard = () => {
                                         Payment Mode
                                     </label>
 
-                                    <select
+                                    <SearchableSelect
                                         value={
                                             paymentData.paymentMode
                                         }
@@ -2626,7 +2627,7 @@ const BillDashboard = () => {
                                             Other
                                         </option>
 
-                                    </select>
+                                    </SearchableSelect>
 
                                 </div>
 

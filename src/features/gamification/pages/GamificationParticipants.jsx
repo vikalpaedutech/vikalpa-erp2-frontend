@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 import { getUsers } from "../../../services/user.service";
 import { getUsersByRole } from "../../../services/userRole.service";
@@ -686,7 +687,7 @@ export default function GamificationParticipants() {
               Filter by Role
             </label>
 
-            <select
+            <SearchableSelect
               value={roleFilter}
               onChange={(e) =>
                 setRoleFilter(
@@ -712,7 +713,7 @@ export default function GamificationParticipants() {
                     {role.roleName}
                   </option>
                 ))}
-            </select>
+            </SearchableSelect>
           </div>
         </div>
       </section>
@@ -940,7 +941,7 @@ export default function GamificationParticipants() {
                   Eligible User
                 </label>
 
-                <select
+                <SearchableSelect
                   value={
                     participantUserId
                   }
@@ -975,7 +976,7 @@ export default function GamificationParticipants() {
                       </option>
                     )
                   )}
-                </select>
+                </SearchableSelect>
 
                 {/* IMPORTANT EMPTY STATE */}
                 {eligibleUsers.length ===
@@ -1048,7 +1049,7 @@ export default function GamificationParticipants() {
                           Program
                         </label>
 
-                        <select
+                        <SearchableSelect
                           value={
                             assignment.programId
                           }
@@ -1084,7 +1085,7 @@ export default function GamificationParticipants() {
                               </option>
                             )
                           )}
-                        </select>
+                        </SearchableSelect>
                       </div>
 
                       {/* BATCH */}
@@ -1093,7 +1094,7 @@ export default function GamificationParticipants() {
                           Batch
                         </label>
 
-                        <select
+                        <SearchableSelect
                           value={
                             assignment.batchId
                           }
@@ -1145,7 +1146,7 @@ export default function GamificationParticipants() {
                                 </option>
                               )
                             )}
-                        </select>
+                        </SearchableSelect>
                       </div>
 
                       {/* CENTER */}
@@ -1154,7 +1155,7 @@ export default function GamificationParticipants() {
                           Center
                         </label>
 
-                        <select
+                        <SearchableSelect
                           value={
                             assignment.centerId
                           }
@@ -1195,7 +1196,7 @@ export default function GamificationParticipants() {
                               </option>
                             )
                           )}
-                        </select>
+                        </SearchableSelect>
                       </div>
 
                       {/* REMOVE */}

@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -444,7 +445,7 @@ function LeaveBalanceManagement() {
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Employee
                 </label>
-                <select
+                <SearchableSelect
                   name="userId"
                   value={form.userId}
                   onChange={handleFormChange}
@@ -458,14 +459,14 @@ function LeaveBalanceManagement() {
                       {user.userId ? `(${user.userId})` : ""}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Leave Type
                 </label>
-                <select
+                <SearchableSelect
                   name="leaveTypeId"
                   value={form.leaveTypeId}
                   onChange={handleFormChange}
@@ -481,7 +482,7 @@ function LeaveBalanceManagement() {
                       {leaveType.name} ({leaveType.code})
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               <div>
@@ -571,7 +572,7 @@ function LeaveBalanceManagement() {
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Leave Type
                 </label>
-                <select
+                <SearchableSelect
                   name="leaveTypeId"
                   value={bulkForm.leaveTypeId}
                   onChange={handleBulkChange}
@@ -587,7 +588,7 @@ function LeaveBalanceManagement() {
                       {leaveType.name} ({leaveType.code})
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               <div>
@@ -677,7 +678,7 @@ function LeaveBalanceManagement() {
               className="rounded-xl border border-gray-300 px-4 py-3"
             />
 
-            <select
+            <SearchableSelect
               name="leaveTypeId"
               value={filters.leaveTypeId}
               onChange={handleFilterChange}
@@ -692,7 +693,7 @@ function LeaveBalanceManagement() {
                   {leaveType.name} ({leaveType.code})
                 </option>
               ))}
-            </select>
+            </SearchableSelect>
 
             <input
               type="number"

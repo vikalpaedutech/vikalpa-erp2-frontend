@@ -1,3 +1,4 @@
+import SearchableSelect from "../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -224,7 +225,7 @@ function BulkOnboardUsers() {
           <div className="grid gap-5 md:grid-cols-2">
             <label className="block">
               <span className="text-sm font-semibold text-gray-700">Select Role <span className="text-red-500">*</span></span>
-              <select
+              <SearchableSelect
                 value={roleCode}
                 onChange={(event) => setRoleCode(event.target.value)}
                 disabled={loadingMeta}
@@ -236,12 +237,12 @@ function BulkOnboardUsers() {
                     {role.roleName} ({role.roleCode})
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </label>
 
             <label className="block">
               <span className="text-sm font-semibold text-gray-700">Select Designation <span className="text-red-500">*</span></span>
-              <select
+              <SearchableSelect
                 value={designationCode}
                 onChange={(event) => setDesignationCode(event.target.value)}
                 disabled={loadingMeta}
@@ -253,7 +254,7 @@ function BulkOnboardUsers() {
                     {designation.designation} ({designation.designationCode})
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
               {selectedDesignation?.departmentId && (
                 <p className="mt-1 text-xs text-gray-500">
                   Department: {selectedDesignation.departmentId.departmentName} ({selectedDesignation.departmentId.departmentCode})
@@ -263,7 +264,7 @@ function BulkOnboardUsers() {
 
             <label className="block">
               <span className="text-sm font-semibold text-gray-700">Region Scope <span className="text-red-500">*</span></span>
-              <select
+              <SearchableSelect
                 value={regionScope}
                 onChange={(event) => setRegionScope(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
@@ -272,7 +273,7 @@ function BulkOnboardUsers() {
                 {SCOPES.map((scope) => (
                   <option key={scope.value} value={scope.value}>{scope.label}</option>
                 ))}
-              </select>
+              </SearchableSelect>
               {selectedScope && <p className="mt-1 text-xs text-gray-500">{selectedScope.help}</p>}
             </label>
 

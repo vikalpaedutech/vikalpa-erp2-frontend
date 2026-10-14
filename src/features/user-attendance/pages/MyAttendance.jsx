@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import {
   useEffect,
   useMemo,
@@ -273,7 +274,7 @@ function MyAttendance() {
                 Attendance Type
               </label>
 
-              <select
+              <SearchableSelect
                 value={attendanceType}
                 onChange={(e) =>
                   setAttendanceType(e.target.value)
@@ -294,7 +295,7 @@ function MyAttendance() {
                     </option>
                   )
                 )}
-              </select>
+              </SearchableSelect>
             </div>
 
 
@@ -303,7 +304,7 @@ function MyAttendance() {
                 Status
               </label>
 
-              <select
+              <SearchableSelect
                 value={status}
                 onChange={(e) =>
                   setStatus(e.target.value)
@@ -329,7 +330,7 @@ function MyAttendance() {
                 <option value="Leave">
                   Leave
                 </option>
-              </select>
+              </SearchableSelect>
             </div>
 
           </div>

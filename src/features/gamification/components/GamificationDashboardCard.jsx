@@ -18,17 +18,7 @@ const formatPoints = (value) => {
     : number.toFixed(1);
 };
 
-const classificationClass = (value) => {
-  if (value === "Positive") {
-    return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-  }
 
-  if (value === "Negative") {
-    return "bg-rose-50 text-rose-700 ring-rose-200";
-  }
-
-  return "bg-slate-50 text-slate-600 ring-slate-200";
-};
 
 const pointClass = (value) =>
   Number(value || 0) > 0
@@ -46,31 +36,44 @@ export default function GamificationDashboardCard() {
 
   useEffect(() => {
     let active = true;
+    let inFlight = false;
 
-    getMyGamificationDashboard()
-      .then((response) => {
+    const refresh = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const response = await getMyGamificationDashboard();
         if (!active) return;
-
-        setState({
-          loading: false,
-          data: response.data,
-          error: "",
-        });
-      })
-      .catch((error) => {
+        setState({ loading: false, data: response.data, error: "" });
+      } catch (error) {
         if (!active) return;
-
-        setState({
+        setState((previous) => ({
           loading: false,
-          data: null,
-          error:
-            error.response?.data?.message ||
-            "Unable to load gamification.",
-        });
-      });
+          data: previous.data,
+          error: error.response?.data?.message || "Unable to load gamification.",
+        }));
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+
+    refresh();
+    // The dashboard may remain mounted while users move between attendance,
+    // calling and marks pages. Refresh on return and periodically so today's
+    // points do not stay stale in a long-lived SPA session.
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    const intervalId = window.setInterval(refresh, 30000);
 
     return () => {
       active = false;
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.clearInterval(intervalId);
     };
   }, []);
 
@@ -247,6 +250,7 @@ export default function GamificationDashboardCard() {
           ))}
         </div>
       </div>
+
     </section>
   );
 }

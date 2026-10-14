@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -183,7 +184,7 @@ function MyLeaves() {
               </h2>
             </div>
 
-            <select
+            <SearchableSelect
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
               className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm"
@@ -194,7 +195,7 @@ function MyLeaves() {
               <option value="Rejected">Rejected</option>
               <option value="Cancelled">Cancelled</option>
               <option value="Withdrawn">Withdrawn</option>
-            </select>
+            </SearchableSelect>
           </div>
         </div>
 

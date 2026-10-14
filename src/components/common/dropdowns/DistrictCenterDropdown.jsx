@@ -1,3 +1,4 @@
+import Select from "react-select";
 import { useRegionAccess } from "../../../context/RegionAccessContext";
 
 import DistrictDropdown from "./DistrictDropdown";
@@ -65,42 +66,18 @@ function DistrictCenterDropdown({
           )}
         </label>
 
-        <select
-          value={centerId}
-          onChange={(event) =>
-            handleCenterChange(
-              event.target.value
-            )
-          }
-          disabled={
-            disabled ||
-            loadingRegionAccess ||
-            !districtId
-          }
-          required={required}
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100"
-        >
-          <option value="">
-            {loadingRegionAccess
-              ? "Loading Centers..."
-              : !districtId
-              ? "Select District First"
-              : centerPlaceholder}
-          </option>
-
-          {availableCenters.map(
-            (center) => (
-              <option
-                key={center._id}
-                value={center._id}
-              >
-                {center.centerCode
-                  ? `${center.centerCode} - ${center.centerName}`
-                  : center.centerName}
-              </option>
-            )
-          )}
-        </select>
+        <Select
+          options={[...availableCenters].sort((a,b) => String(a.centerName || "").localeCompare(String(b.centerName || ""), undefined, { sensitivity: "base" })).map((center) => ({ value: String(center._id), label: center.centerCode ? `${center.centerCode} - ${center.centerName}` : center.centerName }))}
+          value={[...availableCenters].map((center) => ({ value: String(center._id), label: center.centerCode ? `${center.centerCode} - ${center.centerName}` : center.centerName })).find((option) => option.value === String(centerId)) || null}
+          onChange={(option) => handleCenterChange(option?.value || "")}
+          isClearable={!required}
+          isSearchable
+          placeholder={loadingRegionAccess ? "Loading Centers..." : !districtId ? "Select District First" : centerPlaceholder}
+          isDisabled={disabled || loadingRegionAccess || !districtId}
+          className="text-sm"
+          classNamePrefix="react-select"
+          noOptionsMessage={() => "No centers found"}
+        />
       </div>
     </div>
   );

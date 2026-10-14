@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -1389,7 +1390,7 @@ if (
                                                     </label>
 
 
-                                                    <select
+                                                    <SearchableSelect
                                                         value={
                                                             attemptStatus
                                                         }
@@ -1433,7 +1434,7 @@ if (
                                                             )
                                                         )}
 
-                                                    </select>
+                                                    </SearchableSelect>
 
                                                 </div>
 
@@ -1449,7 +1450,7 @@ if (
                                                         </label>
 
 
-                                                        <select
+                                                        <SearchableSelect
                                                             value={
                                                                 attemptRemark
                                                             }
@@ -1486,7 +1487,7 @@ if (
                                                                 )
                                                             )}
 
-                                                        </select>
+                                                        </SearchableSelect>
 
                                                     </div>
 

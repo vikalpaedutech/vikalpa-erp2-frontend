@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 // // frontend/src/features/finance/pages/BillDetails.jsx
 
 // import { useEffect, useState } from "react";
@@ -1014,7 +1015,7 @@
 //                                             Payment Mode
 //                                         </label>
 
-//                                         <select
+//                                         <SearchableSelect
 //                                             value={
 //                                                 paymentMode
 //                                             }
@@ -1052,7 +1053,7 @@
 //                                             <option value="other">
 //                                                 Other
 //                                             </option>
-//                                         </select>
+//                                         </SearchableSelect>
 //                                     </div>
 
 //                                     <div>
@@ -2763,7 +2764,7 @@ function BillDetails() {
                                         Payment Mode
                                     </label>
 
-                                    <select
+                                    <SearchableSelect
                                         value={
                                             paymentMode
                                         }
@@ -2793,7 +2794,7 @@ function BillDetails() {
                                         <option value="other">
                                             Other
                                         </option>
-                                    </select>
+                                    </SearchableSelect>
                                 </div>
                             </div>
 
