@@ -12,6 +12,7 @@ import {
     bulkMarkPaymentPending,
     bulkMarkBillsPaid,
     exportBillDashboard,
+    bulkUpdatePaymentStatusFromCsv,
     verifyBill,
     approveBill,
     rejectBill,
@@ -254,7 +255,7 @@ const getRegionName = (
 };
 
 
-const BillDashboard = () => {
+const BillDashboard = ({ paymentStatusOnly = false }) => {
     const navigate = useNavigate();
 
     const {
@@ -332,7 +333,7 @@ const BillDashboard = () => {
 
     const [filters, setFilters] =
         useState({
-            status: "",
+            status: paymentStatusOnly ? "approved" : "",
             submittedByRole: "",
             submittedBy: "",
             action: "",
@@ -434,6 +435,14 @@ const BillDashboard = () => {
             paymentMode: "",
             remarks: "",
         });
+
+    const [bulkCsvFile, setBulkCsvFile] = useState(null);
+    const [bulkUpdateStatus, setBulkUpdateStatus] = useState("payment-pending");
+    const [bulkIdType, setBulkIdType] = useState("groupedBillId");
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
+    const [bulkResult, setBulkResult] = useState(null);
+    const [bulkUpdating, setBulkUpdating] = useState(false);
+
 
 
     /*
@@ -626,6 +635,7 @@ const BillDashboard = () => {
             const params = {
                 page,
                 limit: 20,
+                ...(paymentStatusOnly ? { paymentStatusOnly: "true" } : {}),
             };
 
             Object.entries(
@@ -737,7 +747,7 @@ const BillDashboard = () => {
 
     const handleReset = async () => {
         const resetFilters = {
-            status: "",
+            status: paymentStatusOnly ? "approved" : "",
             submittedByRole: "",
             submittedBy: "",
             action: "",
@@ -1395,7 +1405,7 @@ const BillDashboard = () => {
         try {
             setFilterLoading(true);
 
-            const params = {};
+            const params = paymentStatusOnly ? { paymentStatusOnly: "true" } : {};
 
             Object.entries(
                 filters
@@ -1608,15 +1618,16 @@ const BillDashboard = () => {
 
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">
-                        Bill Dashboard
+                        {paymentStatusOnly ? "Bill Payment Status" : "Bill Dashboard"}
                     </h1>
 
                     <p className="mt-1 text-sm text-gray-500">
-                        Manage, filter and process bills
-                        from one place.
+                        {paymentStatusOnly ? "View approved bills and update payment status." : "Manage, filter and process bills from one place."}
                     </p>
                 </div>
 
+                <div className="flex flex-wrap gap-2">
+                {paymentStatusOnly && <button type="button" onClick={() => { setBulkModalOpen(true); setBulkResult(null); }} className="rounded-lg border border-blue-600 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50">Download Bulk Update Format / Upload CSV</button>}
                 <button
                     type="button"
                     onClick={handleExport}
@@ -1627,9 +1638,25 @@ const BillDashboard = () => {
                         ? "Processing..."
                         : "Export CSV"}
                 </button>
+                </div>
 
             </div>
 
+            {paymentStatusOnly && bulkModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                  <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
+                    <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Bulk Payment Status Update</h2><button type="button" onClick={() => setBulkModalOpen(false)} className="text-xl">×</button></div>
+                    <label className="mb-1 block text-sm font-medium">Update status</label>
+                    <select value={bulkUpdateStatus} onChange={e => setBulkUpdateStatus(e.target.value)} className="mb-3 w-full rounded-lg border p-2"><option value="payment-pending">Payment Pending</option><option value="paid">Paid</option></select>
+                    <label className="mb-1 block text-sm font-medium">Match records by</label>
+                    <select value={bulkIdType} onChange={e => setBulkIdType(e.target.value)} className="mb-3 w-full rounded-lg border p-2"><option value="groupedBillId">Grouped Bill ID (billids collection)</option><option value="billId">Bill ID (bills collection)</option></select>
+                    <button type="button" className="mb-4 rounded-lg border px-3 py-2 text-sm" onClick={() => { const idHead = bulkIdType === "groupedBillId" ? "Grouped Bill ID" : "Bill ID"; const csv = `${idHead},Status\n${bulkIdType === "groupedBillId" ? "GROUPED_BILL_ID_1" : "BILL_ID_1"},${bulkUpdateStatus}\n${bulkIdType === "groupedBillId" ? "GROUPED_BILL_ID_2" : "BILL_ID_2"},${bulkUpdateStatus}\n`; const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"}); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href=url; a.download=`bill-payment-${bulkIdType}-template.csv`; a.click(); URL.revokeObjectURL(url); }}>Download Format CSV</button>
+                    <label className="mb-1 block text-sm font-medium">Upload filled CSV</label><input type="file" accept=".csv,text/csv" onChange={e => setBulkCsvFile(e.target.files?.[0] || null)} className="mb-4 block w-full rounded-lg border p-2" />
+                    <div className="flex justify-end gap-2"><button type="button" disabled={bulkUpdating} onClick={() => setBulkModalOpen(false)} className="rounded-lg border px-4 py-2">Close</button><button type="button" disabled={!bulkCsvFile || bulkUpdating} onClick={async () => { try { setBulkUpdating(true); const csvContent = await bulkCsvFile.text(); const response = await bulkUpdatePaymentStatusFromCsv({ csvContent, updateStatus: bulkUpdateStatus, idType: bulkIdType }); setBulkResult(response.data || response); await fetchDashboard(1, filters); } catch (error) { setBulkResult({ total: 0, updated: 0, failed: 1, results: [{ row: 0, success: false, reason: error.response?.data?.message || error.message }] }); } finally { setBulkUpdating(false); } }} className="rounded-lg bg-blue-600 px-4 py-2 text-white disabled:opacity-50">{bulkUpdating ? "Updating..." : "Upload CSV & Update"}</button></div>
+                    {bulkResult && <div className="mt-4 rounded-lg border p-3 text-sm"><p>Total: {bulkResult.total ?? 0} · Updated: {bulkResult.updated ?? 0} · Failed: {bulkResult.failed ?? 0}</p>{(bulkResult.results || []).filter(item => !item.success).length > 0 && <><p className="mt-2 font-semibold">Failed rows</p><div className="max-h-40 overflow-auto">{bulkResult.results.filter(item => !item.success).map((item, index) => <div key={index} className="py-1">Row {item.row}: {item.id || "—"} — {item.reason}</div>)}</div><button type="button" className="mt-2 rounded border px-3 py-1" onClick={() => { const failures = bulkResult.results.filter(item => !item.success); const csv = "Row,ID,Reason\n" + failures.map(item => [item.row, `"${String(item.id || "").replace(/"/g,'""')}"`, `"${String(item.reason || "").replace(/"/g,'""')}"`].join(",")).join("\n"); const url = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); const a = document.createElement("a"); a.href=url; a.download="bill-payment-failed-rows.csv"; a.click(); URL.revokeObjectURL(url); }}>Download Failed Rows CSV</button></>}</div>}
+                  </div>
+                </div>
+            )}
 
             {/* =====================================================
                 SUMMARY
@@ -1750,20 +1777,14 @@ const BillDashboard = () => {
                                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
                             >
                                 <option value="">
-                                    All Statuses
+                                    {paymentStatusOnly ? "All Payment Statuses" : "All Statuses"}
                                 </option>
 
-                                <option value="verification-pending">
-                                    Verification Pending
-                                </option>
+                                {!paymentStatusOnly && <option value="verification-pending">Verification Pending</option>}
 
-                                <option value="verified">
-                                    Verified
-                                </option>
+                                {!paymentStatusOnly && <option value="verified">Verified</option>}
 
-                                <option value="approval-pending">
-                                    Approval Pending
-                                </option>
+                                {!paymentStatusOnly && <option value="approval-pending">Approval Pending</option>}
 
                                 <option value="approved">
                                     Approved
@@ -1777,9 +1798,7 @@ const BillDashboard = () => {
                                     Paid
                                 </option>
 
-                                <option value="rejected">
-                                    Rejected
-                                </option>
+                                {!paymentStatusOnly && <option value="rejected">Rejected</option>}
                             </SearchableSelect>
                         </div>
 
@@ -2993,6 +3012,7 @@ const BillDashboard = () => {
                                             Status
                                         </th>
 
+                                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Attachments</th>
                                         <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                                             Actions
                                         </th>
@@ -3145,6 +3165,10 @@ const BillDashboard = () => {
 
                                                     </td>
 
+
+                                                    <td className="px-5 py-4">
+                                                        {(bill.attachments || []).length ? <div className="flex flex-wrap gap-2">{bill.attachments.map((attachment, index) => <a key={attachment._id || attachment.publicId || index} href={attachment.signedUrl || attachment.url} target="_blank" rel="noreferrer" className="rounded border px-2 py-1 text-xs text-blue-700">View {index + 1}</a>)}</div> : <span className="text-xs text-gray-400">No attachments</span>}
+                                                    </td>
 
                                                     <td className="px-5 py-4">
 

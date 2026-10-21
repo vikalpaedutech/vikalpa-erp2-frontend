@@ -450,7 +450,7 @@ function MyAttendance() {
                         </td>
 
                         <td className="px-5 py-4">
-                          {item.attendanceType}
+                          {item.attendanceType && item.attendanceType !== "null" ? item.attendanceType : "—"}
                         </td>
 
                         <td className="px-5 py-4">

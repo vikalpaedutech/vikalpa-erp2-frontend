@@ -45,8 +45,10 @@ import Bills from "../features/finance/pages/Bills";
 import BillDetails from "../features/finance/pages/BillDetails";
 import BillVerification from "../features/finance/pages/BillVerification";
 import BillApproval from "../features/finance/pages/BillApproval";
+import BillExpenseGroupDetails from "../features/finance/pages/BillExpenseGroupDetails";
 import BillAuditors from "../features/finance/pages/BillAuditors";
 import BillDashboard from "../features/finance/pages/BillDashboard";
+import BillPaymentStatus from "../features/finance/pages/BillPaymentStatus";
 
 import CallingTypes from "../features/calling/pages/CallingTypes";
 import CallingDetails from "../features/calling/pages/CallingDetails";
@@ -321,6 +323,9 @@ function AppRoutes() {
               }
             />
 
+            <Route path="/finance/bill-verification/group/:billId" element={<BillExpenseGroupDetails />} />
+            <Route path="/finance/bill-approval/group/:billId" element={<BillExpenseGroupDetails />} />
+
             <Route
               path="/admin/bill-auditors"
               element={
@@ -334,6 +339,8 @@ function AppRoutes() {
                 <BillDashboard />
               }
             />
+
+            <Route path="/finance/bill-payment-status" element={<BillPaymentStatus />} />
 
 
             {/* =================================================

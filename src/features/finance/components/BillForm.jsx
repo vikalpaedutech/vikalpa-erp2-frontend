@@ -1906,22 +1906,11 @@ import {
 } from "../services/bill.service";
 
 const EXPENSE_CATEGORIES = [
-    {
-        value: "office-expense",
-        label: "Office Expense",
-    },
-    {
-        value: "travel-expense",
-        label: "Travel Expense",
-    },
-    {
-        value: "orientation",
-        label: "Orientation",
-    },
-    {
-        value: "stationery",
-        label: "Stationery",
-    },
+    { value: "travel-expense", label: "Travel" },
+    { value: "food", label: "Food" },
+    { value: "accommodation", label: "Accommodation" },
+    { value: "office-expense", label: "Office Expense" },
+    { value: "others", label: "Others" },
 ];
 
 const createEmptyExpense = () => ({
@@ -1929,6 +1918,10 @@ const createEmptyExpense = () => ({
     amount: "",
     expenseDate: "",
     description: "",
+    stayedAt: "",
+    itemName: "",
+    purpose: "",
+    expense: "",
 
     travel: {
         from: "",
@@ -1977,9 +1970,11 @@ const normalizeExpense = (expense) => ({
             expense?.expenseDate
         ),
 
-    description:
-        expense?.description ||
-        "",
+    description: expense?.description || "",
+    stayedAt: expense?.stayedAt || "",
+    itemName: expense?.itemName || "",
+    purpose: expense?.purpose || "",
+    expense: expense?.expense || "",
 
     travel: {
         from:
@@ -2012,15 +2007,12 @@ const normalizeExpense = (expense) => ({
 const getInitialBillData = (bill) => {
     if (!bill) {
         return {
-            billNumber: "",
-            title: "",
+            expensePurpose: "MB Center Expense",
+            customExpensePurpose: "",
             description: "",
             billDate: "",
             currency: "INR",
-
-            vendor: {
-                ...initialVendor,
-            },
+            vendor: { ...initialVendor },
 
             expenses: [
                 createEmptyExpense(),
@@ -2029,13 +2021,8 @@ const getInitialBillData = (bill) => {
     }
 
     return {
-        billNumber:
-            bill.billNumber ||
-            "",
-
-        title:
-            bill.title ||
-            "",
+        expensePurpose: bill.billId?.expensePurpose || bill.expensePurpose || "MB Center Expense",
+        customExpensePurpose: "",
 
         description:
             bill.description ||
@@ -2099,6 +2086,7 @@ const BillForm = ({
         attachments,
         setAttachments,
     ] = useState([]);
+    const [expenseAttachments, setExpenseAttachments] = useState({});
 
     const [
         existingAttachments,
@@ -2343,6 +2331,29 @@ const BillForm = ({
         );
     };
 
+    const handleExpenseAttachmentChange = (expenseIndex, event) => {
+        const files = Array.from(event.target.files || []);
+        const currentCount = Object.values(expenseAttachments).reduce((sum, list) => sum + list.length, 0);
+        if (currentCount + files.length > 10) {
+            setError("Maximum 10 attachments are allowed across all expenses");
+            event.target.value = "";
+            return;
+        }
+        setExpenseAttachments((previous) => ({
+            ...previous,
+            [expenseIndex]: [...(previous[expenseIndex] || []), ...files],
+        }));
+        event.target.value = "";
+        setError("");
+    };
+
+    const handleRemoveExpenseAttachment = (expenseIndex, fileIndex) => {
+        setExpenseAttachments((previous) => ({
+            ...previous,
+            [expenseIndex]: (previous[expenseIndex] || []).filter((_, index) => index !== fileIndex),
+        }));
+    };
+
     /*
      |--------------------------------------------------------------------------
      | REMOVE EXPENSE
@@ -2499,20 +2510,8 @@ const BillForm = ({
      */
 
     const validateForm = () => {
-        if (
-            !billData.billNumber.trim()
-        ) {
-            return "Bill number is required";
-        }
-
-        if (
-            !billData.title.trim()
-        ) {
-            return "Bill title is required";
-        }
-
-        if (!billData.billDate) {
-            return "Bill date is required";
+        if (billData.expensePurpose === "Other" && !billData.customExpensePurpose.trim()) {
+            return "Please enter the expense purpose";
         }
 
         if (
@@ -2639,30 +2638,15 @@ const BillForm = ({
              */
 
             formData.append(
-                "billNumber",
-                billData.billNumber.trim()
+                "expensePurpose",
+                billData.expensePurpose === "Other"
+                    ? billData.customExpensePurpose.trim()
+                    : billData.expensePurpose
             );
-
-            formData.append(
-                "title",
-                billData.title.trim()
-            );
-
-            formData.append(
-                "description",
-                billData.description.trim()
-            );
-
-            formData.append(
-                "billDate",
-                billData.billDate
-            );
-
-            formData.append(
-                "currency",
-                billData.currency ||
-                    "INR"
-            );
+            formData.append("description", billData.description.trim());
+            formData.append("currency", "INR");
+            const submitImmediately = event.nativeEvent?.submitter?.value === "submit";
+            formData.append("submitImmediately", String(submitImmediately));
 
             /*
              * Expenses
@@ -2672,17 +2656,6 @@ const BillForm = ({
                 "expenses",
                 JSON.stringify(
                     billData.expenses
-                )
-            );
-
-            /*
-             * Vendor
-             */
-
-            formData.append(
-                "vendor",
-                JSON.stringify(
-                    billData.vendor
                 )
             );
 
@@ -2708,14 +2681,11 @@ const BillForm = ({
              * New attachments
              */
 
-            attachments.forEach(
-                (file) => {
-                    formData.append(
-                        "attachments",
-                        file
-                    );
-                }
-            );
+            Object.entries(expenseAttachments).forEach(([expenseIndex, files]) => {
+                files.forEach((file) => formData.append(`expenseAttachments_${expenseIndex}`, file));
+            });
+            // Backward compatibility for any files still held by the legacy attachment state.
+            attachments.forEach((file) => formData.append("attachments", file));
 
             let response;
 
@@ -2773,27 +2743,16 @@ const BillForm = ({
                 !isEditMode
             ) {
                 setBillData({
-                    billNumber:
-                        "",
-                    title:
-                        "",
-                    description:
-                        "",
-                    billDate:
-                        "",
-                    currency:
-                        "INR",
-
-                    vendor: {
-                        ...initialVendor,
-                    },
-
-                    expenses: [
-                        createEmptyExpense(),
-                    ],
+                    expensePurpose: "MB Center Expense",
+                    customExpensePurpose: "",
+                    description: "",
+                    currency: "INR",
+                    vendor: { ...initialVendor },
+                    expenses: [createEmptyExpense()],
                 });
 
                 setAttachments([]);
+                setExpenseAttachments({});
 
                 setExistingAttachments([]);
 
@@ -2866,280 +2825,27 @@ const BillForm = ({
                 </div>
             )}
 
-            {/* =========================================================
-                BILL INFORMATION
-            ========================================================= */}
-
+            {/* BILL INFORMATION: stored in billids */}
             <div className="rounded-xl border bg-white p-5 shadow-sm">
-
-                <div className="mb-5">
-
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        {isEditMode
-                            ? "Edit Bill"
-                            : "Bill Information"}
-                    </h2>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                        {isEditMode
-                            ? "Update the bill details and save your changes."
-                            : "Enter the basic details of the bill."}
-                    </p>
-
-                </div>
-
+                <h2 className="mb-4 text-lg font-semibold text-gray-800">Bill Information</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-                    {/* Bill Number */}
-
                     <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Bill Number
-
-                            <span className="text-red-500">
-                                {" "}
-                                *
-                            </span>
-                        </label>
-
-                        <input
-                            type="text"
-                            name="billNumber"
-                            value={
-                                billData.billNumber
-                            }
-                            onChange={
-                                handleBillChange
-                            }
-                            placeholder="Enter bill number"
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                        />
-
+                        <label className="mb-1 block text-sm font-medium text-gray-700">Expense Purpose <span className="text-red-500">*</span></label>
+                        <select name="expensePurpose" value={billData.expensePurpose} onChange={handleBillChange} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
+                            {[
+                                "MB Center Expense", "Event", "Orientation", "Office", "Stationary", "Other"
+                            ].map((purpose) => <option key={purpose} value={purpose}>{purpose}</option>)}
+                        </select>
                     </div>
-
-                    {/* Bill Date */}
-
-                    <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Bill Date
-
-                            <span className="text-red-500">
-                                {" "}
-                                *
-                            </span>
-                        </label>
-
-                        <input
-                            type="date"
-                            name="billDate"
-                            value={
-                                billData.billDate
-                            }
-                            onChange={
-                                handleBillChange
-                            }
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                        />
-
-                    </div>
-
-                    {/* Title */}
-
+                    {billData.expensePurpose === "Other" && <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">Specify Expense Purpose <span className="text-red-500">*</span></label>
+                        <input value={billData.customExpensePurpose} onChange={(e) => setBillData((prev) => ({ ...prev, customExpensePurpose: e.target.value }))} placeholder="Enter purpose" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                    </div>}
                     <div className="md:col-span-2">
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Bill Title
-
-                            <span className="text-red-500">
-                                {" "}
-                                *
-                            </span>
-                        </label>
-
-                        <input
-                            type="text"
-                            name="title"
-                            value={
-                                billData.title
-                            }
-                            onChange={
-                                handleBillChange
-                            }
-                            placeholder="Enter bill title"
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                        />
-
+                        <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
+                        <textarea name="description" value={billData.description} onChange={handleBillChange} rows={3} placeholder="Enter description" className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm" />
                     </div>
-
-                    {/* Description */}
-
-                    <div className="md:col-span-2">
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Description
-                        </label>
-
-                        <textarea
-                            name="description"
-                            value={
-                                billData.description
-                            }
-                            onChange={
-                                handleBillChange
-                            }
-                            rows={3}
-                            placeholder="Enter bill description"
-                            className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                        />
-
-                    </div>
-
-                    {/* Currency */}
-
-                    <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Currency
-                        </label>
-
-                        <input
-                            type="text"
-                            name="currency"
-                            value={
-                                billData.currency
-                            }
-                            onChange={
-                                handleBillChange
-                            }
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase outline-none focus:border-blue-500"
-                        />
-
-                    </div>
-
                 </div>
-
-            </div>
-
-            {/* =========================================================
-                VENDOR
-            ========================================================= */}
-
-            <div className="rounded-xl border bg-white p-5 shadow-sm">
-
-                <div className="mb-5">
-
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        Vendor Details
-                    </h2>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                        Vendor information is optional.
-                    </p>
-
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-                    {/* Vendor Name */}
-
-                    <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Vendor Name
-                        </label>
-
-                        <input
-                            type="text"
-                            name="name"
-                            value={
-                                billData.vendor
-                                    .name
-                            }
-                            onChange={
-                                handleVendorChange
-                            }
-                            placeholder="Enter vendor name"
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                        />
-
-                    </div>
-
-                    {/* Vendor Contact */}
-
-                    <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Vendor Contact
-                        </label>
-
-                        <input
-                            type="text"
-                            name="contact"
-                            value={
-                                billData.vendor
-                                    .contact
-                            }
-                            onChange={
-                                handleVendorChange
-                            }
-                            placeholder="Enter vendor contact"
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                        />
-
-                    </div>
-
-                    {/* GST */}
-
-                    <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            GST Number
-                        </label>
-
-                        <input
-                            type="text"
-                            name="gstNumber"
-                            value={
-                                billData.vendor
-                                    .gstNumber
-                            }
-                            onChange={
-                                handleVendorChange
-                            }
-                            placeholder="Enter GST number"
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase outline-none focus:border-blue-500"
-                        />
-
-                    </div>
-
-                    {/* Address */}
-
-                    <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Vendor Address
-                        </label>
-
-                        <input
-                            type="text"
-                            name="address"
-                            value={
-                                billData.vendor
-                                    .address
-                            }
-                            onChange={
-                                handleVendorChange
-                            }
-                            placeholder="Enter vendor address"
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                        />
-
-                    </div>
-
-                </div>
-
             </div>
 
             {/* =========================================================
@@ -3381,6 +3087,19 @@ const BillForm = ({
 
                                 </div>
 
+                                {expense.category === "accommodation" && <div className="mt-4">
+                                    <label className="mb-1 block text-sm font-medium text-gray-700">Stayed At (Full Address)</label>
+                                    <textarea value={expense.stayedAt || ""} onChange={(e) => handleExpenseChange(expenseIndex, "stayedAt", e.target.value)} rows={2} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" placeholder="Enter full address" />
+                                </div>}
+                                {expense.category === "office-expense" && <div className="mt-4">
+                                    <label className="mb-1 block text-sm font-medium text-gray-700">Expense</label>
+                                    <input value={expense.expense || ""} onChange={(e) => handleExpenseChange(expenseIndex, "expense", e.target.value)} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" placeholder="Expense details" />
+                                </div>}
+                                {expense.category === "others" && <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div><label className="mb-1 block text-sm font-medium text-gray-700">Item Name</label><input value={expense.itemName || ""} onChange={(e) => handleExpenseChange(expenseIndex, "itemName", e.target.value)} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" /></div>
+                                    <div><label className="mb-1 block text-sm font-medium text-gray-700">Purpose</label><input value={expense.purpose || ""} onChange={(e) => handleExpenseChange(expenseIndex, "purpose", e.target.value)} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" /></div>
+                                </div>}
+
                                 {/* TRAVEL DETAILS */}
 
                                 {expense.category ===
@@ -3620,6 +3339,22 @@ const BillForm = ({
 
                 </div>
 
+                {/* Per-expense attachments */}
+                <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
+                    {billData.expenses.map((expense, expenseIndex) => (
+                        <div key={`expense-attachments-${expenseIndex}`} className="mb-3 last:mb-0">
+                            <label className="mb-1 block text-xs font-medium text-slate-600">Expense #{expenseIndex + 1} — PDF or image (max 10 files total)</label>
+                            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(event) => handleExpenseAttachmentChange(expenseIndex, event)} className="block w-full rounded-lg border border-gray-300 bg-white text-sm file:mr-4 file:border-0 file:bg-gray-100 file:px-4 file:py-2" />
+                            {(expenseAttachments[expenseIndex] || []).map((file, fileIndex) => (
+                                <div key={`${file.name}-${fileIndex}`} className="mt-2 flex items-center justify-between rounded bg-white px-3 py-2 text-sm">
+                                    <span className="truncate">{file.name}</span>
+                                    <button type="button" onClick={() => handleRemoveExpenseAttachment(expenseIndex, fileIndex)} className="ml-3 text-red-600">Remove</button>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+
                 {/* TOTAL */}
 
                 <div className="mt-5 flex justify-end">
@@ -3643,172 +3378,22 @@ const BillForm = ({
 
             </div>
 
-            {/* =========================================================
-                ATTACHMENTS
-            ========================================================= */}
-
+            {/* Attachments belong to each expense item */}
             <div className="rounded-xl border bg-white p-5 shadow-sm">
-
-                <div className="mb-5">
-
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        Attachments
-                    </h2>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                        Upload supporting PDF or image documents. Maximum 10 files.
-                    </p>
-
-                </div>
-
-                {/* Existing attachments */}
-
-                {isEditMode &&
-                    existingAttachments.length >
-                        0 && (
-
-                    <div className="mb-5">
-
-                        <p className="mb-3 text-sm font-medium text-gray-700">
-                            Existing Attachments
-                        </p>
-
-                        <div className="space-y-2">
-
-                            {existingAttachments.map(
-                                (
-                                    attachment,
-                                    index
-                                ) => (
-
-                                    <div
-                                        key={
-                                            attachment._id ||
-                                            index
-                                        }
-                                        className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 text-sm"
-                                    >
-
-                                        <span className="min-w-0 truncate text-gray-700">
-                                            {
-                                                attachment.fileName
-                                            }
-                                        </span>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                handleRemoveExistingAttachment(
-                                                    attachment
-                                                )
-                                            }
-                                            disabled={
-                                                loading
-                                            }
-                                            className="shrink-0 text-xs font-medium text-red-600 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            Remove
-                                        </button>
-
-                                    </div>
-
-                                )
-                            )}
-
-                        </div>
-
+                <h2 className="text-lg font-semibold text-gray-800">Supporting Attachments</h2>
+                <p className="mt-1 text-sm text-gray-500">Upload PDF or image files within each expense. Maximum 10 files total.</p>
+                {isEditMode && existingAttachments.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium text-gray-700">Existing attachments</p>
+                        {existingAttachments.map((attachment, index) => (
+                            <div key={attachment._id || index} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                                <span className="truncate">{attachment.fileName || attachment.originalName || `Attachment ${index + 1}`}</span>
+                                <button type="button" onClick={() => handleRemoveExistingAttachment(attachment)} className="text-red-600">Remove</button>
+                            </div>
+                        ))}
                     </div>
                 )}
-
-                {/* Message when all existing
-                    attachments were removed */}
-
-                {isEditMode &&
-                    bill?.attachments?.length >
-                        0 &&
-                    existingAttachments.length ===
-                        0 &&
-                    removedAttachmentIds.length >
-                        0 && (
-
-                    <div className="mb-5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-700">
-                        All existing attachments have been marked for removal. Click "Save Changes" to permanently delete them.
-                    </div>
-                )}
-
-                <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.webp"
-                    onChange={
-                        handleAttachmentChange
-                    }
-                    className="block w-full rounded-lg border border-gray-300 bg-white text-sm file:mr-4 file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm"
-                />
-
-                {/* New attachments */}
-
-                {attachments.length >
-                    0 && (
-
-                    <div className="mt-4 space-y-2">
-
-                        <p className="text-sm font-medium text-gray-700">
-                            New Attachments
-                        </p>
-
-                        {attachments.map(
-                            (
-                                file,
-                                index
-                            ) => (
-
-                                <div
-                                    key={`${file.name}-${index}`}
-                                    className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm"
-                                >
-
-                                    <span className="truncate text-gray-700">
-                                        {
-                                            file.name
-                                        }
-                                    </span>
-
-                                    <div className="ml-3 flex items-center gap-3">
-
-                                        <span className="shrink-0 text-xs text-gray-500">
-                                            {(
-                                                file.size /
-                                                1024 /
-                                                1024
-                                            ).toFixed(
-                                                2
-                                            )}{" "}
-                                            MB
-                                        </span>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                handleRemoveAttachment(
-                                                    index
-                                                )
-                                            }
-                                            className="text-xs font-medium text-red-600 hover:text-red-700"
-                                        >
-                                            Remove
-                                        </button>
-
-                                    </div>
-
-                                </div>
-
-                            )
-                        )}
-
-                    </div>
-                )}
-
+                <p className="mt-3 text-xs text-slate-500">Use the attachment selector inside each Expense Item below to attach files to that specific expense.</p>
             </div>
 
             {/* =========================================================
@@ -3832,18 +3417,13 @@ const BillForm = ({
 
                 )}
 
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                    {loading
-                        ? isEditMode
-                            ? "Saving..."
-                            : "Creating..."
-                        : isEditMode
-                        ? "Save Changes"
-                        : "Create Bill Draft"}
+                {!isEditMode && (
+                    <button type="submit" name="submitMode" value="draft" disabled={loading} className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+                        {loading ? "Saving..." : "Create Draft"}
+                    </button>
+                )}
+                <button type="submit" name="submitMode" value={isEditMode ? "save" : "submit"} disabled={loading} className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
+                    {loading ? (isEditMode ? "Saving..." : "Submitting...") : isEditMode ? "Save Changes" : "Submit Bill"}
                 </button>
 
             </div>

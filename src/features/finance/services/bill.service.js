@@ -60,6 +60,12 @@ export const getBillById = async (billId) => {
 |--------------------------------------------------------------------------
 */
 
+export const deleteBill = async (billId) => {
+    const response = await apiClient.delete(`/finance-management/bills/${billId}`);
+    return response.data;
+};
+
+
 export const updateBill = async (
     billId,
     formData
@@ -436,4 +442,12 @@ export const exportBillDashboard = async (
     );
 
     return response;
+};
+
+export const bulkUpdatePaymentStatusFromCsv = async (payload) => {
+    const response = await apiClient.post(
+        "/finance-management/bills/bulk-payment-status-csv",
+        payload
+    );
+    return response.data;
 };

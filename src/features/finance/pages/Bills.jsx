@@ -1944,6 +1944,7 @@ import {
     getBills,
     getBillById,
     submitBill,
+    deleteBill,
 } from "../services/bill.service";
 
 import BillForm from "../components/BillForm";
@@ -2173,6 +2174,18 @@ const Bills = () => {
         }
     };
 
+
+    const handleDeleteBill = async (bill) => {
+        const confirmed = window.confirm("Delete this bill and all expenses linked to the same Bill ID?");
+        if (!confirmed) return;
+        try {
+            setError("");
+            await deleteBill(bill._id);
+            await fetchBills({ page: pagination?.page || 1 });
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to delete bill");
+        }
+    };
 
     const handleEdit = async (bill) => {
     try {
@@ -2550,10 +2563,11 @@ const Bills = () => {
                                                         </button>
 
 
-                                                        {(bill.status ===
-                                                            "draft" ||
-                                                            bill.status ===
-                                                                "rejected") && (
+                                                        {(["draft", "verification-pending"].includes(bill.status)) && (
+                                                            <button type="button" onClick={() => handleDeleteBill(bill)} className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Delete</button>
+                                                        )}
+
+                                                        {(["draft", "rejected", "verification-pending"].includes(bill.status)) && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
@@ -2568,10 +2582,7 @@ const Bills = () => {
                                                         )}
 
 
-                                                        {(bill.status ===
-                                                            "draft" ||
-                                                            bill.status ===
-                                                                "rejected") && (
+                                                        {(["draft", "rejected"].includes(bill.status)) && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
@@ -2705,10 +2716,11 @@ const Bills = () => {
                                             </button>
 
 
-                                            {(bill.status ===
-                                                "draft" ||
-                                                bill.status ===
-                                                    "rejected") && (
+                                            {(["draft", "verification-pending"].includes(bill.status)) && (
+                                                <button type="button" onClick={() => handleDeleteBill(bill)} className="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-600">Delete</button>
+                                            )}
+
+                                            {(["draft", "rejected", "verification-pending"].includes(bill.status)) && (
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -2723,10 +2735,7 @@ const Bills = () => {
                                             )}
 
 
-                                            {(bill.status ===
-                                                "draft" ||
-                                                bill.status ===
-                                                    "rejected") && (
+                                            {(["draft", "rejected"].includes(bill.status)) && (
                                                 <button
                                                     type="button"
                                                     onClick={() =>

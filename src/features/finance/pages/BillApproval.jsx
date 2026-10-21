@@ -1,13 +1,45 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../../../context/AuthContext";
-
 import {
     getBillsForApproval,
     approveBill,
     rejectBill,
 } from "../services/bill.service";
+
+
+const groupExpensesByBillId = (items = []) => {
+    const groups = new Map();
+    items.forEach((expense) => {
+        const rawBillId = expense.billId;
+        const groupId = rawBillId?._id || rawBillId || expense._id;
+        const key = String(groupId);
+        if (!groups.has(key)) {
+            groups.set(key, {
+                ...expense,
+                _id: key,
+                billId: rawBillId,
+                expenses: [],
+                totalAmount: 0,
+                expensePurpose: rawBillId?.expensePurpose || expense.expensePurpose || expense.title || 'Expense group',
+                submissionDate: rawBillId?.submissionDate || expense.submittedAt || expense.createdAt,
+            });
+        }
+        const group = groups.get(key);
+        group.expenses.push(expense);
+        group.totalAmount += Number(expense.amount ?? expense.totalAmount ?? 0);
+        if (!group.submittedBy && expense.submittedBy) group.submittedBy = expense.submittedBy;
+        if (!group.status || ['draft','submitted'].includes(group.status)) group.status = expense.status || group.status;
+    });
+    return Array.from(groups.values()).map((group) => ({
+        ...group,
+        billNumber: group._id,
+        title: group.expensePurpose,
+        billDate: group.submissionDate,
+        currency: 'INR',
+        expenseCount: group.expenses.length,
+    }));
+};
 
 const formatDate = (date) => {
     if (!date) return "-";
@@ -25,16 +57,6 @@ const formatCurrency = (amount, currency = "INR") => {
 
 const BillApproval = () => {
     const navigate = useNavigate();
-
-    const { access, isAdmin } = useAuth();
-
-    const roleCodes =
-        access?.roles?.map((role) => role?.roleCode) || [];
-
-    const canAccess =
-        isAdmin ||
-        roleCodes.includes("cm") ||
-        roleCodes.includes("aci");
 
     const [bills, setBills] = useState([]);
 
@@ -92,7 +114,7 @@ const BillApproval = () => {
 
             const response = await getBillsForApproval(params);
 
-            setBills(response.data?.bills || []);
+            setBills(groupExpensesByBillId(response.data?.bills || []));
 
             setPagination(
                 response.data?.pagination || {
@@ -117,13 +139,11 @@ const BillApproval = () => {
         }
     };
 
+    // BillAuditor assignments are enforced by the backend queue API.
+    // Do not hardcode user role codes in the page-level access check.
     useEffect(() => {
-        if (canAccess) {
-            fetchBills(1);
-        } else {
-            setLoading(false);
-        }
-    }, [canAccess]);
+        fetchBills(1);
+    }, []);
 
     /*
      * ============================================================
@@ -162,169 +182,26 @@ const BillApproval = () => {
      * ============================================================
      */
 
-    const handleOpenApprove = (billId) => {
-        if (
-            openAction.billId === billId &&
-            openAction.type === "approve"
-        ) {
-            setOpenAction({
-                billId: null,
-                type: null,
-            });
-
-            setRemarks("");
-
-            return;
-        }
-
-        setOpenAction({
-            billId,
-            type: "approve",
+    const openExpenseGroup = (bill) => {
+        navigate(`/finance/bill-approval/group/${bill._id}`, {
+            state: { group: bill, mode: 'approve' },
         });
-
-        setRemarks("");
     };
 
-    /*
-     * ============================================================
-     * OPEN REJECTION REMARKS
-     * ============================================================
-     */
-
-    const handleOpenReject = (billId) => {
-        if (
-            openAction.billId === billId &&
-            openAction.type === "reject"
-        ) {
-            setOpenAction({
-                billId: null,
-                type: null,
-            });
-
-            setRemarks("");
-
-            return;
-        }
-
-        setOpenAction({
-            billId,
-            type: "reject",
-        });
-
-        setRemarks("");
+    const handleOpenApprove = (billOrId) => {
+        const group = bills.find((item) => item._id === (billOrId?._id || billOrId));
+        if (group) openExpenseGroup(group);
     };
-
-    /*
-     * ============================================================
-     * CANCEL ACTION
-     * ============================================================
-     */
-
-    const handleCancelAction = () => {
-        setOpenAction({
-            billId: null,
-            type: null,
-        });
-
-        setRemarks("");
-    };
-
-    /*
-     * ============================================================
-     * APPROVE BILL
-     * ============================================================
-     */
-
-    const handleApprove = async (bill) => {
-        try {
-            setProcessingId(bill._id);
-
-            await approveBill(bill._id, {
-                remarks: remarks.trim(),
-            });
-
-            alert("Bill approved successfully");
-
-            handleCancelAction();
-
-            await fetchBills(pagination.page);
-        } catch (err) {
-            console.error(
-                "Failed to approve bill:",
-                err
-            );
-
-            alert(
-                err.response?.data?.message ||
-                "Failed to approve bill"
-            );
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
-    /*
-     * ============================================================
-     * REJECT BILL
-     * ============================================================
-     */
-
-    const handleReject = async (bill) => {
-        if (!remarks.trim()) {
-            alert("Rejection remarks are required");
-
-            return;
-        }
-
-        try {
-            setProcessingId(bill._id);
-
-            await rejectBill(bill._id, {
-                remarks: remarks.trim(),
-            });
-
-            alert("Bill rejected successfully");
-
-            handleCancelAction();
-
-            await fetchBills(pagination.page);
-        } catch (err) {
-            console.error(
-                "Failed to reject bill:",
-                err
-            );
-
-            alert(
-                err.response?.data?.message ||
-                "Failed to reject bill"
-            );
-        } finally {
-            setProcessingId(null);
-        }
-    };
+    const handleOpenReject = handleOpenApprove;
+    const handleCancelAction = () => { setOpenAction({ billId: null, type: null }); setRemarks(''); };
+    const handleApprove = async (bill) => openExpenseGroup(bill);
+    const handleReject = async (bill) => openExpenseGroup(bill);
 
     /*
      * ============================================================
      * ACCESS DENIED
      * ============================================================
      */
-
-    if (!canAccess) {
-        return (
-            <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-                <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-                    <h1 className="text-xl font-semibold text-red-800">
-                        Access Denied
-                    </h1>
-
-                    <p className="mt-2 text-sm text-red-700">
-                        You are not authorized to access
-                        the bill approval page.
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -358,7 +235,7 @@ const BillApproval = () => {
                     <div className="flex-1">
 
                         <label className="mb-2 block text-base font-medium text-gray-700">
-                            Bill Number
+                            Bill ID
                         </label>
 
                         <input
@@ -444,11 +321,11 @@ const BillApproval = () => {
                                     <tr className="border-b border-gray-900">
 
                                         <th className="px-5 py-5 text-left text-base font-semibold text-gray-900">
-                                            Bill Number
+                                            Bill ID
                                         </th>
 
                                         <th className="px-5 py-5 text-left text-base font-semibold text-gray-900">
-                                            Title
+                                            Expense Purpose
                                         </th>
 
                                         <th className="px-5 py-5 text-left text-base font-semibold text-gray-900">
@@ -456,7 +333,7 @@ const BillApproval = () => {
                                         </th>
 
                                         <th className="px-5 py-5 text-left text-base font-semibold text-gray-900">
-                                            Bill Date
+                                            Submitted Date
                                         </th>
 
                                         <th className="px-5 py-5 text-right text-base font-semibold text-gray-900">
@@ -529,7 +406,7 @@ const BillApproval = () => {
                                                             type="button"
                                                             onClick={() =>
                                                                 navigate(
-                                                                    `/finance/bills/${bill._id}`
+                                                                    `/finance/bill-approval/group/${bill._id}`, { state: { group: bill, mode: "approve" } }
                                                                 )
                                                             }
                                                             className="rounded-lg border border-gray-300 px-5 py-2.5 text-base font-medium text-gray-700 hover:bg-gray-50"
@@ -793,7 +670,7 @@ const BillApproval = () => {
                                             <div className="flex justify-between gap-4">
 
                                                 <span className="text-gray-500">
-                                                    Bill Date
+                                                    Submitted Date
                                                 </span>
 
                                                 <span>
@@ -828,7 +705,7 @@ const BillApproval = () => {
                                                 type="button"
                                                 onClick={() =>
                                                     navigate(
-                                                        `/finance/bills/${bill._id}`
+                                                        `/finance/bill-approval/group/${bill._id}`, { state: { group: bill, mode: "approve" } }
                                                     )
                                                 }
                                                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700"

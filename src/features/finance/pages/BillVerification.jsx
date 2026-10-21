@@ -1,14 +1,46 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../../../context/AuthContext";
-
 import {
     getBillsForVerification,
     verifyBill,
     rejectBill,
 } from "../services/bill.service";
 
+
+
+const groupExpensesByBillId = (items = []) => {
+    const groups = new Map();
+    items.forEach((expense) => {
+        const rawBillId = expense.billId;
+        const groupId = rawBillId?._id || rawBillId || expense._id;
+        const key = String(groupId);
+        if (!groups.has(key)) {
+            groups.set(key, {
+                ...expense,
+                _id: key,
+                billId: rawBillId,
+                expenses: [],
+                totalAmount: 0,
+                expensePurpose: rawBillId?.expensePurpose || expense.expensePurpose || expense.title || 'Expense group',
+                submissionDate: rawBillId?.submissionDate || expense.submittedAt || expense.createdAt,
+            });
+        }
+        const group = groups.get(key);
+        group.expenses.push(expense);
+        group.totalAmount += Number(expense.amount ?? expense.totalAmount ?? 0);
+        if (!group.submittedBy && expense.submittedBy) group.submittedBy = expense.submittedBy;
+        if (!group.status || ['draft','submitted'].includes(group.status)) group.status = expense.status || group.status;
+    });
+    return Array.from(groups.values()).map((group) => ({
+        ...group,
+        billNumber: group._id,
+        title: group.expensePurpose,
+        billDate: group.submissionDate,
+        currency: 'INR',
+        expenseCount: group.expenses.length,
+    }));
+};
 
 const formatDate = (date) => {
     if (!date) return "-";
@@ -50,17 +82,6 @@ const formatStatus = (status) => {
 function BillVerification() {
     const navigate = useNavigate();
 
-    const {
-        access,
-        isAdmin,
-    } = useAuth();
-
-    const roleCode =
-        access?.roles?.find(
-            (role) =>
-                role?.roleCode
-        )?.roleCode || null;
-
     const [bills, setBills] =
         useState([]);
 
@@ -86,15 +107,6 @@ function BillVerification() {
 
     const [remarks, setRemarks] =
         useState({});
-
-
-    /*
-     * Authorized verification roles.
-     */
-    const canAccessPage =
-        isAdmin ||
-        roleCode === "aci" ||
-        roleCode === "cm";
 
 
     /*
@@ -127,10 +139,7 @@ function BillVerification() {
                     params
                 );
 
-            setBills(
-                response.data?.bills ||
-                    []
-            );
+            setBills(groupExpensesByBillId(response.data?.bills || []));
 
             setPagination(
                 response.data?.pagination ||
@@ -157,13 +166,11 @@ function BillVerification() {
     };
 
 
+    // BillAuditor assignments are enforced by the backend queue API.
+    // Do not hardcode user role codes in the page-level access check.
     useEffect(() => {
-        if (canAccessPage) {
-            fetchBills(1);
-        } else {
-            setLoading(false);
-        }
-    }, [canAccessPage]);
+        fetchBills(1);
+    }, []);
 
 
     /*
@@ -224,182 +231,20 @@ function BillVerification() {
      * ============================================================
      */
 
-    const handleVerify = async (
-        bill
-    ) => {
-        const billRemarks =
-            getRemarks(
-                bill._id
-            ).trim();
-
-        const confirmed =
-            window.confirm(
-                `Are you sure you want to verify bill ${bill.billNumber}?`
-            );
-
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            setProcessingId(
-                bill._id
-            );
-
-            await verifyBill(
-                bill._id,
-                {
-                    remarks:
-                        billRemarks ||
-                        undefined,
-                }
-            );
-
-            alert(
-                "Bill verified successfully"
-            );
-
-            setRemarks(
-                (previous) => {
-                    const updated = {
-                        ...previous,
-                    };
-
-                    delete updated[
-                        bill._id
-                    ];
-
-                    return updated;
-                }
-            );
-
-            await fetchBills(
-                pagination.page
-            );
-        } catch (err) {
-            console.error(
-                "Failed to verify bill:",
-                err
-            );
-
-            alert(
-                err.response?.data?.message ||
-                    "Failed to verify bill"
-            );
-        } finally {
-            setProcessingId(
-                null
-            );
-        }
+    const openExpenseGroup = (bill) => {
+        navigate(`/finance/bill-verification/group/${bill._id}`, {
+            state: { group: bill, mode: 'verify' },
+        });
     };
 
-
-    /*
-     * ============================================================
-     * REJECT
-     * ============================================================
-     */
-
-    const handleReject = async (
-        bill
-    ) => {
-        const billRemarks =
-            getRemarks(
-                bill._id
-            ).trim();
-
-        if (!billRemarks) {
-            alert(
-                "Rejection remarks are required"
-            );
-
-            return;
-        }
-
-        const confirmed =
-            window.confirm(
-                `Are you sure you want to reject bill ${bill.billNumber}?`
-            );
-
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            setProcessingId(
-                bill._id
-            );
-
-            await rejectBill(
-                bill._id,
-                {
-                    remarks:
-                        billRemarks,
-                }
-            );
-
-            alert(
-                "Bill rejected successfully"
-            );
-
-            setRemarks(
-                (previous) => {
-                    const updated = {
-                        ...previous,
-                    };
-
-                    delete updated[
-                        bill._id
-                    ];
-
-                    return updated;
-                }
-            );
-
-            await fetchBills(
-                pagination.page
-            );
-        } catch (err) {
-            console.error(
-                "Failed to reject bill:",
-                err
-            );
-
-            alert(
-                err.response?.data?.message ||
-                    "Failed to reject bill"
-            );
-        } finally {
-            setProcessingId(
-                null
-            );
-        }
-    };
-
+    const handleVerify = async (bill) => openExpenseGroup(bill);
+    const handleReject = async (bill) => openExpenseGroup(bill);
 
     /*
      * ============================================================
      * ACCESS DENIED
      * ============================================================
      */
-
-    if (!canAccessPage) {
-        return (
-            <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-                <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-                    <h1 className="text-xl font-semibold text-red-800">
-                        Access Denied
-                    </h1>
-
-                    <p className="mt-2 text-sm text-red-700">
-                        You are not authorized to access
-                        the bill verification page.
-                    </p>
-                </div>
-            </div>
-        );
-    }
-
 
     /*
      * ============================================================
@@ -434,7 +279,7 @@ function BillVerification() {
 
                     <div>
                         <label className="mb-2 block text-sm font-medium text-gray-700">
-                            Bill Number
+                            Bill ID
                         </label>
 
                         <input
@@ -510,11 +355,11 @@ function BillVerification() {
                                 <thead className="border-b bg-gray-50">
                                     <tr>
                                         <th className="px-5 py-4 text-sm font-semibold text-gray-700">
-                                            Bill Number
+                                            Bill ID
                                         </th>
 
                                         <th className="px-5 py-4 text-sm font-semibold text-gray-700">
-                                            Title
+                                            Expense Purpose
                                         </th>
 
                                         <th className="px-5 py-4 text-sm font-semibold text-gray-700">
@@ -522,7 +367,7 @@ function BillVerification() {
                                         </th>
 
                                         <th className="px-5 py-4 text-sm font-semibold text-gray-700">
-                                            Bill Date
+                                            Submitted Date
                                         </th>
 
                                         <th className="px-5 py-4 text-sm font-semibold text-gray-700">
@@ -547,7 +392,7 @@ function BillVerification() {
                                                 className="border-b last:border-b-0"
                                             >
                                                 <td className="px-5 py-4 text-sm font-medium text-gray-800">
-                                                    {bill.billNumber}
+                                                    {bill.billNumber} <span className="text-xs text-gray-500">({bill.expenseCount} expenses)</span>
                                                 </td>
 
                                                 <td className="px-5 py-4 text-sm text-gray-700">
@@ -587,7 +432,7 @@ function BillVerification() {
                                                             type="button"
                                                             onClick={() =>
                                                                 navigate(
-                                                                    `/finance/bills/${bill._id}`
+                                                                    `/finance/bill-verification/group/${bill._id}`, { state: { group: bill, mode: "verify" } }
                                                                 )
                                                             }
                                                             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -676,7 +521,7 @@ function BillVerification() {
 
                                             <div>
                                                 <p className="text-xs text-gray-500">
-                                                    Bill Number
+                                                    Bill ID
                                                 </p>
 
                                                 <p className="font-medium text-gray-800">
@@ -698,7 +543,7 @@ function BillVerification() {
 
                                             <div>
                                                 <p className="text-xs text-gray-500">
-                                                    Title
+                                                    Expense Purpose
                                                 </p>
 
                                                 <p className="font-medium text-gray-800">
@@ -719,7 +564,7 @@ function BillVerification() {
 
                                             <div>
                                                 <p className="text-xs text-gray-500">
-                                                    Bill Date
+                                                    Submitted Date
                                                 </p>
 
                                                 <p className="font-medium text-gray-800">
@@ -769,7 +614,7 @@ function BillVerification() {
                                                 type="button"
                                                 onClick={() =>
                                                     navigate(
-                                                        `/finance/bills/${bill._id}`
+                                                        `/finance/bill-verification/group/${bill._id}`, { state: { group: bill, mode: "verify" } }
                                                     )
                                                 }
                                                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700"

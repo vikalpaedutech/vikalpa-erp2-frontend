@@ -78,6 +78,7 @@ export const administrationItems = [
   { label: "Bill Approval", path: "/finance/bill-approval", permission: "finance.bill.approve", section: "FINANCE", roles: ["admin", "cm", "aci"] },
   { label: "Bill Auditor", path: "/admin/bill-auditors", permission: "finance.auditor.manage", section: "FINANCE", roles: ["admin"] },
   { label: "Bill Dashboard", path: "/finance/bill-dashboard", permission: "finance.dashboard.view", section: "FINANCE", roles: ["admin", "cm"] },
+  { label: "Bill Payment Status", path: "/finance/bill-payment-status", permission: "Bill-Payment-Status", section: "FINANCE" },
 
   // ============================================================
   // ADMINISTRATIONS / HR / GAMIFICATION
