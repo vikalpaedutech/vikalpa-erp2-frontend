@@ -9,6 +9,7 @@ import Login from "../pages/auth/Login";
 import Dashboard from "../pages/dashboard/Dashboard";
 
 import ProtectedRoute from "./ProtectedRoute";
+import PermissionGate from "../components/authorization/PermissionGate";
 import AppLayout from "../layouts/AppLayout";
 
 import ForgotPassword from "../pages/auth/ForgotPassword";
@@ -109,6 +110,7 @@ import DownloadStudentsDashboard from "../features/dashboards/pages/DownloadStud
 import ExamsMarksDashboard from "../features/dashboards/pages/ExamsMarksDashboard";
 import CopyCheckingDashboard from "../features/dashboards/pages/CopyCheckingDashboard";
 import StudentResourceManagement from "../features/student-resources/StudentResourceManagement";
+import HRMSWorkspace from "../features/hrms/HRMSWorkspace";
 
 function AppRoutes() {
 
@@ -152,6 +154,9 @@ function AppRoutes() {
             {/* =================================================
                 DASHBOARD
             ================================================= */}
+
+            <Route path="/hrms" element={<HRMSWorkspace />} />
+            <Route path="/hrms/:module" element={<HRMSWorkspace />} />
 
             <Route
               path="/dashboard"
@@ -340,7 +345,7 @@ function AppRoutes() {
               }
             />
 
-            <Route path="/finance/bill-payment-status" element={<BillPaymentStatus />} />
+            <Route path="/finance/bill-payment-status" element={<PermissionGate permission="finance.bill-payment-status.view"><BillPaymentStatus /></PermissionGate>} />
 
 
             {/* =================================================
@@ -634,6 +639,8 @@ function AppRoutes() {
               path="/admin/gamification"
               element={<GamificationDashboard />}
             />
+            <Route path="/gamification/dashboard" element={<GamificationDashboard scope="region" />} />
+            <Route path="/gamification/all-dashboard" element={<GamificationDashboard scope="all" />} />
 
             <Route
               path="/admin/gamification/roles"

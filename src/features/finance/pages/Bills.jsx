@@ -1945,6 +1945,7 @@ import {
     getBillById,
     submitBill,
     deleteBill,
+    exportMyBillsExcel,
 } from "../services/bill.service";
 
 import BillForm from "../components/BillForm";
@@ -2064,6 +2065,10 @@ const Bills = () => {
         setStatus,
     ] = useState("");
 
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [exporting, setExporting] = useState(false);
+
     const [
         showCreateForm,
         setShowCreateForm,
@@ -2098,6 +2103,8 @@ const Bills = () => {
                     status:
                         params.status ??
                         status,
+                    fromDate: params.fromDate ?? startDate,
+                    toDate: params.toDate ?? endDate,
                 });
 
             setBills(
@@ -2134,19 +2141,38 @@ const Bills = () => {
             page: 1,
             billNumber,
             status,
+            fromDate: startDate,
+            toDate: endDate,
         });
     };
-
 
     const handleReset = () => {
         setBillNumber("");
         setStatus("");
+        setStartDate("");
+        setEndDate("");
+        fetchBills({ page: 1, billNumber: "", status: "", fromDate: "", toDate: "" });
+    };
 
-        fetchBills({
-            page: 1,
-            billNumber: "",
-            status: "",
-        });
+    const handleExport = async () => {
+        try {
+            setExporting(true);
+            setError("");
+            const response = await exportMyBillsExcel({ fromDate: startDate, toDate: endDate });
+            const blob = new Blob([response.data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `my-bills-${new Date().toISOString().slice(0, 10)}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to export your bills");
+        } finally {
+            setExporting(false);
+        }
     };
 
 
@@ -2335,7 +2361,7 @@ const Bills = () => {
             {/* Filters */}
             <div className="mb-8 rounded-2xl border border-slate-300 bg-white p-5 shadow-sm">
 
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_1fr_auto_auto] md:items-end">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
 
                     <div>
                         <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -2409,6 +2435,15 @@ const Bills = () => {
                     </div>
 
 
+                    <div>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">Upload Start Date</label>
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
+                    </div>
+                    <div>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">Upload End Date</label>
+                        <input type="date" min={startDate || undefined} value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
+                    </div>
+
                     <button
                         type="button"
                         onClick={
@@ -2429,6 +2464,7 @@ const Bills = () => {
                     >
                         Reset
                     </button>
+                    <button type="button" onClick={handleExport} disabled={exporting} className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60">{exporting ? "Exporting..." : "Export Excel"}</button>
 
                 </div>
             </div>

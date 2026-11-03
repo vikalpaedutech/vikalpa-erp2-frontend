@@ -5,6 +5,7 @@ export const navigationItems = [
   { label: "Attendance", path: "/attendance", permission: "attendance.view", section: "Attendance & Reports" },
   { label: "My Attendance & Reports", path: "/attendance/my", permission: "attendance.report.view", section: "Attendance & Reports" },
   { label: "Leave Dashboard", path: "/leave/dashboard", permission: "leave.dashboard.view", section: "Attendance & Reports" },
+  { label: "HR Management Workspace", path: "/hrms", permission: "hrms.view", section: "HR Management" },
   { label: "Apply Leave", path: "/leave/apply", permission: "leave.apply", section: "Attendance & Reports" },
   { label: "My Leaves", path: "/leave/my", permission: "leave.my.view", section: "Attendance & Reports" },
   { label: "Leave Approvals", path: "/leave/approvals", permission: "leave.approval.view", section: "Attendance & Reports" },
@@ -78,7 +79,7 @@ export const administrationItems = [
   { label: "Bill Approval", path: "/finance/bill-approval", permission: "finance.bill.approve", section: "FINANCE", roles: ["admin", "cm", "aci"] },
   { label: "Bill Auditor", path: "/admin/bill-auditors", permission: "finance.auditor.manage", section: "FINANCE", roles: ["admin"] },
   { label: "Bill Dashboard", path: "/finance/bill-dashboard", permission: "finance.dashboard.view", section: "FINANCE", roles: ["admin", "cm"] },
-  { label: "Bill Payment Status", path: "/finance/bill-payment-status", permission: "Bill-Payment-Status", section: "FINANCE" },
+  { label: "Bill Payment Status", path: "/finance/bill-payment-status", permission: "finance.bill-payment-status.view", section: "FINANCE" },
 
   // ============================================================
   // ADMINISTRATIONS / HR / GAMIFICATION
@@ -90,6 +91,8 @@ export const administrationItems = [
 
   { label: "Gamification Eligible Roles", path: "/admin/gamification/roles", permission: "gamification.role.manage", section: "GAMIFICATION ADMINISTRATIONS", roles: ["admin"] },
   { label: "Gamification Dashboard", path: "/admin/gamification", permission: "gamification.manage", section: "GAMIFICATION ADMINISTRATIONS", roles: ["admin"] },
+  { label: "Gamification Dashboard", path: "/gamification/dashboard", permission: "gamification.dashboard.view", section: "GAMIFICATION", group: "Performance Dashboards" },
+  { label: "Gamification All Dashboard", path: "/gamification/all-dashboard", permission: "gamification.all-dashboard.view", section: "GAMIFICATION", group: "Performance Dashboards" },
   { label: "Gamification Criteria", path: "/admin/gamification/criteria", permission: "gamification.criteria.manage", section: "GAMIFICATION ADMINISTRATIONS", roles: ["admin"] },
   { label: "Gamification Participants", path: "/admin/gamification/participants", permission: "gamification.participant.manage", section: "GAMIFICATION ADMINISTRATIONS", roles: ["admin"] },
 

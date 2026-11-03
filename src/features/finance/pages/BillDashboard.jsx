@@ -261,6 +261,7 @@ const BillDashboard = ({ paymentStatusOnly = false }) => {
     const {
         access,
         isAdmin,
+        can,
     } = useAuth();
 
 
@@ -1566,6 +1567,7 @@ const BillDashboard = ({ paymentStatusOnly = false }) => {
 
     const hasFinanceRole =
         isAdmin ||
+        (paymentStatusOnly && can("finance.bill-payment-status.view")) ||
         roleCodes.includes(
             "cc"
         ) ||

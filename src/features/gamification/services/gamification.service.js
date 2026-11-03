@@ -55,12 +55,22 @@ export const getGamificationLeaderboard = async (params = {}) => {
   return response.data;
 };
 
-export const downloadGamificationReport = async (month, format = "xlsx") => {
+export const downloadGamificationReport = async (month, format = "xlsx", scope = "region", date) => {
   const response = await apiClient.get("/gamification-management/report/download", {
-    params: { month, format },
+    params: { month, format, scope, date },
     responseType: "blob",
   });
   return response.data;
 };
 
 export const initiateGamificationDaily = async (date) => { const response = await apiClient.post("/gamification-management/initiate-daily", { date }); return response.data; };
+
+export const initiateGamificationEvent = async (payload) => {
+  const response = await apiClient.post("/gamification-management/initiate-event", payload);
+  return response.data;
+};
+
+export const updateGamificationEventPointValue = async (payload) => {
+  const response = await apiClient.patch("/gamification-management/event-point-value", payload);
+  return response.data;
+};

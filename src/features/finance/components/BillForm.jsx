@@ -2868,15 +2868,6 @@ const BillForm = ({
 
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={
-                            handleAddExpense
-                        }
-                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                    >
-                        + Add Expense
-                    </button>
 
                 </div>
 
@@ -3332,27 +3323,33 @@ const BillForm = ({
 
                                 )}
 
+                                <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-4">
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Expense #{expenseIndex + 1} — PDF or image (max 10 files total)</label>
+                                    <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(event) => handleExpenseAttachmentChange(expenseIndex, event)} className="block w-full rounded-lg border border-gray-300 bg-white text-sm file:mr-4 file:border-0 file:bg-gray-100 file:px-4 file:py-2" />
+                                    {(expenseAttachments[expenseIndex] || []).map((file, fileIndex) => (
+                                        <div key={`${file.name}-${fileIndex}`} className="mt-2 flex items-center justify-between rounded bg-slate-50 px-3 py-2 text-sm">
+                                            <span className="truncate">{file.name}</span>
+                                            <button type="button" onClick={() => handleRemoveExpenseAttachment(expenseIndex, fileIndex)} className="ml-3 text-red-600">Remove</button>
+                                        </div>
+                                    ))}
+                                    {expenseIndex === 0 && isEditMode && existingAttachments.length > 0 && (
+                                        <div className="mt-3 border-t border-slate-200 pt-3">
+                                            <p className="mb-2 text-xs font-semibold text-slate-600">Existing attachments</p>
+                                            {existingAttachments.map((attachment, index) => (
+                                                <div key={attachment._id || index} className="mt-2 flex items-center justify-between rounded bg-slate-50 px-3 py-2 text-sm">
+                                                    <span className="truncate">{attachment.fileName || attachment.originalName || `Attachment ${index + 1}`}</span>
+                                                    <button type="button" onClick={() => handleRemoveExistingAttachment(attachment)} className="ml-3 text-red-600">Remove</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
                             </div>
 
                         )
                     )}
 
-                </div>
-
-                {/* Per-expense attachments */}
-                <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
-                    {billData.expenses.map((expense, expenseIndex) => (
-                        <div key={`expense-attachments-${expenseIndex}`} className="mb-3 last:mb-0">
-                            <label className="mb-1 block text-xs font-medium text-slate-600">Expense #{expenseIndex + 1} — PDF or image (max 10 files total)</label>
-                            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(event) => handleExpenseAttachmentChange(expenseIndex, event)} className="block w-full rounded-lg border border-gray-300 bg-white text-sm file:mr-4 file:border-0 file:bg-gray-100 file:px-4 file:py-2" />
-                            {(expenseAttachments[expenseIndex] || []).map((file, fileIndex) => (
-                                <div key={`${file.name}-${fileIndex}`} className="mt-2 flex items-center justify-between rounded bg-white px-3 py-2 text-sm">
-                                    <span className="truncate">{file.name}</span>
-                                    <button type="button" onClick={() => handleRemoveExpenseAttachment(expenseIndex, fileIndex)} className="ml-3 text-red-600">Remove</button>
-                                </div>
-                            ))}
-                        </div>
-                    ))}
                 </div>
 
                 {/* TOTAL */}
@@ -3376,24 +3373,10 @@ const BillForm = ({
 
                 </div>
 
-            </div>
+                <div className="mt-4 flex justify-end">
+                    <button type="button" onClick={handleAddExpense} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">+ Add Expense</button>
+                </div>
 
-            {/* Attachments belong to each expense item */}
-            <div className="rounded-xl border bg-white p-5 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-800">Supporting Attachments</h2>
-                <p className="mt-1 text-sm text-gray-500">Upload PDF or image files within each expense. Maximum 10 files total.</p>
-                {isEditMode && existingAttachments.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                        <p className="text-sm font-medium text-gray-700">Existing attachments</p>
-                        {existingAttachments.map((attachment, index) => (
-                            <div key={attachment._id || index} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm">
-                                <span className="truncate">{attachment.fileName || attachment.originalName || `Attachment ${index + 1}`}</span>
-                                <button type="button" onClick={() => handleRemoveExistingAttachment(attachment)} className="text-red-600">Remove</button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <p className="mt-3 text-xs text-slate-500">Use the attachment selector inside each Expense Item below to attach files to that specific expense.</p>
             </div>
 
             {/* =========================================================

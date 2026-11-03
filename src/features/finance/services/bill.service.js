@@ -451,3 +451,9 @@ export const bulkUpdatePaymentStatusFromCsv = async (payload) => {
     );
     return response.data;
 };
+
+
+export const exportMyBillsExcel = async (params = {}) => {
+    const response = await apiClient.get("/finance-management/bills/export-my-bills", { params, responseType: "blob" });
+    return response;
+};

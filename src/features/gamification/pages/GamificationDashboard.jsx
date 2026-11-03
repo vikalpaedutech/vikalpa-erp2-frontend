@@ -5,6 +5,8 @@ import {
   updateGamificationMonthlyRanking,
   getGamificationLeaderboard,
   downloadGamificationReport,
+  initiateGamificationEvent,
+  updateGamificationEventPointValue,
 } from "../services/gamification.service";
 import { initiateGamification } from "../services/gamification.service";
 
@@ -44,19 +46,25 @@ const classificationClass = (value) => {
   return "bg-slate-50 text-slate-600 ring-slate-200";
 };
 
-export default function GamificationDashboard() {
+export default function GamificationDashboard({ scope = "admin" }) {
   const [month, setMonth] = useState(currentMonth());
   const [rankDate, setRankDate] = useState(new Date().toISOString().slice(0, 10));
   const [monthlyLeaderboard, setMonthlyLeaderboard] =
     useState([]);
   const [dailyLeaderboard, setDailyLeaderboard] =
     useState([]);
+  const [eventLeaderboard, setEventLeaderboard] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] =
     useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const eventTypes = ["Self Attendance", "Student Attendance", "PDF Upload", "Calling Absentee", "Marks", "Disciplinary"];
+  const [selectedEvent, setSelectedEvent] = useState("Self Attendance");
+  const [eventPeriod, setEventPeriod] = useState("Daily");
+  const [overrideEvent, setOverrideEvent] = useState("Self Attendance");
+  const [overridePoints, setOverridePoints] = useState("");
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -67,10 +75,13 @@ export default function GamificationDashboard() {
         getGamificationLeaderboard({
           month,
           periodType: "Monthly",
+          ...(scope === "region" || scope === "all" ? { scope } : {}),
         }),
         getGamificationLeaderboard({
           month,
           periodType: "Daily",
+          date: rankDate,
+          ...(scope === "region" || scope === "all" ? { scope } : {}),
         }),
       ]);
 
@@ -93,7 +104,7 @@ export default function GamificationDashboard() {
 
   useEffect(() => {
     loadDashboard();
-  }, [month]);
+  }, [month, rankDate, scope]);
 
   const initiate = async () => {
     if (!window.confirm(`Calculate gamification rank for ${rankDate} only? Other dates will not be recalculated.`)) return;
@@ -130,6 +141,45 @@ export default function GamificationDashboard() {
     }
   };
 
+  const calculateSelectedEvent = async () => {
+    const payload = eventPeriod === "Monthly"
+      ? { eventType: selectedEvent, periodType: "Monthly", month }
+      : { eventType: selectedEvent, periodType: "Daily", date: rankDate };
+    if (!window.confirm(`Recalculate ${selectedEvent} for ${eventPeriod === "Monthly" ? month : rankDate}? Other event types will remain unchanged.`)) return;
+    setProcessing("event"); setError(""); setMessage("");
+    try {
+      const response = await initiateGamificationEvent(payload);
+      const eventRankResponse = await getGamificationLeaderboard({
+        month,
+        periodType: eventPeriod,
+        ...(eventPeriod === "Daily" ? { date: rankDate } : {}),
+        eventType: selectedEvent,
+        ...(scope === "region" || scope === "all" ? { scope } : {}),
+      });
+      setEventLeaderboard(unwrapList(eventRankResponse));
+      setMessage(response?.message || `${selectedEvent} ranking recalculated.`);
+      await loadDashboard();
+    } catch (e) {
+      setError(e.response?.data?.message || "Failed to calculate selected event ranking.");
+    } finally { setProcessing(""); }
+  };
+
+  const saveEventPointValue = async () => {
+    if (overridePoints === "" || !Number.isFinite(Number(overridePoints))) {
+      setError("Enter a valid point value."); return;
+    }
+    if (!window.confirm(`Set ${overrideEvent} points to ${overridePoints} for all existing users/events and future recalculations?`)) return;
+    setProcessing("override"); setError(""); setMessage("");
+    try {
+      const response = await updateGamificationEventPointValue({ eventType: overrideEvent, pointValue: Number(overridePoints) });
+      setMessage(response?.message || "Event point value updated.");
+      setOverridePoints("");
+      await loadDashboard();
+    } catch (e) {
+      setError(e.response?.data?.message || "Failed to update event point value.");
+    } finally { setProcessing(""); }
+  };
+
   const download = async (format) => {
     setProcessing(`download-${format}`);
     setError("");
@@ -138,7 +188,9 @@ export default function GamificationDashboard() {
       const blob =
         await downloadGamificationReport(
           month,
-          format
+          format,
+          scope === "all" ? "all" : "region",
+          rankDate
         );
 
       const url = URL.createObjectURL(blob);
@@ -218,10 +270,25 @@ export default function GamificationDashboard() {
                 }
                 className="rounded-xl border border-white/15 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:ring-4 focus:ring-white/20"
               />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => download("xlsx")} disabled={Boolean(processing)} className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-indigo-800 shadow-sm disabled:opacity-50">
+                  {processing === "download-xlsx" ? "Exporting..." : "Export Excel"}
+                </button>
+                <button type="button" onClick={() => download("csv")} disabled={Boolean(processing)} className="rounded-xl border border-white/30 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
+                  {processing === "download-csv" ? "Exporting..." : "Export CSV"}
+                </button>
+              </div>
             </div>
+            {scope !== "admin" && (
+              <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-indigo-100">Daily Ranking Date</label>
+                <input type="date" value={rankDate} onChange={(e) => setRankDate(e.target.value)} className="rounded-xl border border-white/15 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800" />
+              </div>
+            )}
           </div>
         </section>
 
+        {scope === "admin" && <>
         {/* ACTIONS */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -262,30 +329,67 @@ export default function GamificationDashboard() {
                   : "Update Monthly Ranking"}
               </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  download("xlsx")
-                }
-                disabled={Boolean(processing)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-              >
-                Excel
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  download("csv")
-                }
-                disabled={Boolean(processing)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-              >
-                CSV
-              </button>
             </div>
           </div>
         </section>
+
+        {/* EVENT-SPECIFIC CONTROLS */}
+        <section className="grid gap-4 xl:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="font-semibold text-slate-900">Calculate Rank by Event</h2>
+            <p className="mt-1 text-sm text-slate-500">Recalculate only the selected event type for a date or month. Other event types remain unchanged.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-sm font-medium text-slate-700">Event Type
+                <select value={selectedEvent} onChange={(e) => setSelectedEvent(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5">
+                  {eventTypes.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-medium text-slate-700">Calculation Period
+                <select value={eventPeriod} onChange={(e) => setEventPeriod(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5">
+                  <option value="Daily">Today / Selected Date</option><option value="Monthly">Selected Month</option>
+                </select>
+              </label>
+            </div>
+            <button type="button" onClick={calculateSelectedEvent} disabled={Boolean(processing)} className="mt-4 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+              {processing === "event" ? "Calculating..." : "Calculate Selected Event Rank"}
+            </button>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="font-semibold text-slate-900">Update Event Points for All Users</h2>
+            <p className="mt-1 text-sm text-slate-500">Sets one point value for every existing ledger entry of this event and applies it to future recalculations.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-sm font-medium text-slate-700">Event Type
+                <select value={overrideEvent} onChange={(e) => setOverrideEvent(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5">
+                  {eventTypes.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-medium text-slate-700">New Points Value
+                <input type="number" step="0.1" value={overridePoints} onChange={(e) => setOverridePoints(e.target.value)} placeholder="e.g. 5 or -5" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5" />
+              </label>
+            </div>
+            <button type="button" onClick={saveEventPointValue} disabled={Boolean(processing)} className="mt-4 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+              {processing === "override" ? "Updating..." : "Apply Point Value to All Users"}
+            </button>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <h2 className="font-semibold text-slate-900">{selectedEvent} — {eventPeriod} Event Ranking</h2>
+            <p className="mt-1 text-xs text-slate-500">Ranking is calculated using only this event type, independently of other event points.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-5 py-3">Rank</th><th className="px-5 py-3">Participant</th><th className="px-5 py-3">Event Points</th><th className="px-5 py-3">Event Count</th></tr></thead>
+              <tbody className="divide-y divide-slate-100">
+                {eventLeaderboard.length ? eventLeaderboard.map((row) => <tr key={row.userId?._id || row._id}><td className="px-5 py-3 font-semibold">#{row.rank}</td><td className="px-5 py-3">{row.userId?.name || "-"}</td><td className="px-5 py-3 font-bold">{formatPoints(row.totalPoints)}</td><td className="px-5 py-3">{row.eventCount || 0}</td></tr>) : <tr><td colSpan="4" className="px-5 py-6 text-center text-slate-500">Select an event and calculate its ranking to view event-specific results.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        </>}
+
 
         {/* STATUS */}
         {(message || error) && (
@@ -370,8 +474,8 @@ export default function GamificationDashboard() {
                       Current Day Ranking
                     </h2>
                     <p className="mt-1 text-xs text-slate-500">
-                      Today&apos;s points and rank snapshot for{" "}
-                      {month}.
+                      Daily points and ranking for{" "}
+                      {rankDate}.
                     </p>
                   </div>
 
@@ -387,7 +491,7 @@ export default function GamificationDashboard() {
                     <tr>
                       <th className="px-5 py-3">Rank</th>
                       <th className="px-5 py-3">Participant</th>
-                      <th className="px-5 py-3">Today Points</th>
+                      <th className="px-5 py-3">Date Points</th>
                       <th className="px-5 py-3">Events</th>
                       <th className="px-5 py-3">Status</th>
                     </tr>
@@ -409,7 +513,7 @@ export default function GamificationDashboard() {
                       dailyLeaderboard.map(
                         (row) => (
                           <tr
-                            key={row._id}
+                            key={row.userId?._id || row._id}
                             className="transition hover:bg-slate-50"
                           >
                             <td className="px-5 py-4">
