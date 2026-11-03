@@ -1,13 +1,23 @@
+// import axios from "axios";
+
+// const apiClient = axios.create({
+//   baseURL: "http://localhost:8100/api/v1",
+//   withCredentials: true,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
+
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:8100/api/v1",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8100/api/v1",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
-
 
 // const apiClient = axios.create({
 //   baseURL: "http://64.227.143.155:8100/api/v1",
