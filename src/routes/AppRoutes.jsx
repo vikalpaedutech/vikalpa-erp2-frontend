@@ -115,7 +115,7 @@ import HRMSWorkspace from "../features/hrms/HRMSWorkspace";
 function AppRoutes() {
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/vikalpa-erp2-frontend">
 
       <Routes>
 
