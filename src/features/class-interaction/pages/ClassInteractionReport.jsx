@@ -35,6 +35,7 @@ function ClassInteractionReport() {
 
   const {
     access,
+    can,
   } = useAuth();
 
   const {
@@ -87,7 +88,14 @@ function ClassInteractionReport() {
     );
 
 
+  // Any user with the explicit Class Interaction View permission
+  // can open the report, even when their role is not CM / CC / ACI.
+  // The backend applies that user's assigned region/program/batch scope.
+  const hasClassInteractionViewPermission =
+    can("class-interaction.view");
+
   const isIndividualReportUser =
+    hasClassInteractionViewPermission ||
     roleCodes.some(
       (role) =>
         INDIVIDUAL_REPORT_ROLES.includes(
