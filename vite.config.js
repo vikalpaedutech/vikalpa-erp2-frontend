@@ -26,7 +26,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
 
   // DigitalOcean App Platform subpath
-  base: '/vikalpa-erp2-frontend/',
+  // base: '/vikalpa-erp2-frontend/',
+  base: '/',
 
   server: {
     host: '0.0.0.0',

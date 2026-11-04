@@ -87,12 +87,17 @@ import MyLeaves from "../features/user-leave/pages/MyLeaves";
 import LeaveApprovals from "../features/user-leave/pages/LeaveApprovals";
 import LeaveDashboard from "../features/user-leave/pages/LeaveDashboard";
 import LeaveTypes from "../features/user-leave/pages/LeaveTypes";
+import LeavePolicies from "../features/user-leave/pages/LeavePolicies";
 import LeaveApprovalRules from "../features/user-leave/pages/LeaveApprovalRules";
 import LeaveBalanceManagement from "../features/user-leave/pages/LeaveBalanceManagement";
+import LeaveAccrualReport from "../features/user-leave/pages/LeaveAccrualReport";
 import LeaveDetails from "../features/user-leave/pages/LeaveDetails";
 import LeaveApprovalDetails from "../features/user-leave/pages/LeaveApprovalDetails";
 
 import AttendanceManagement from "../features/admin-attendance/pages/AttendanceManagement";
+import Employees from "../features/hrms/pages/Employees";
+import EmployeeProfile from "../features/hrms/pages/EmployeeProfile";
+import BulkAttendance from "../features/admin-attendance/pages/BulkAttendance";
 import AccessBasedAttendance from "../features/admin-attendance/pages/AccessBasedAttendance";
 import GamificationDashboard from "../features/gamification/pages/GamificationDashboard";
 import GamificationRoles from "../features/gamification/pages/GamificationRoles";
@@ -115,8 +120,8 @@ import HRMSWorkspace from "../features/hrms/HRMSWorkspace";
 function AppRoutes() {
 
   return (
-    <BrowserRouter basename="/vikalpa-erp2-frontend">
-
+    // <BrowserRouter basename="/vikalpa-erp2-frontend">
+       <BrowserRouter>
       <Routes>
 
         {/* =====================================================
@@ -530,29 +535,36 @@ function AppRoutes() {
               }
             />
 
+            <Route path="/admin/employees" element={<PermissionGate permission="hr.employee.view"><Employees /></PermissionGate>} />
+            <Route path="/admin/employees/:employeeId" element={<PermissionGate permission="hr.employee.view"><EmployeeProfile /></PermissionGate>} />
+
             {/* =================================================
                 LEAVE ADMINISTRATION
             ================================================= */}
 
             <Route
               path="/admin/leave-types"
-              element={
-                <LeaveTypes />
-              }
+              element={<PermissionGate permission="leave.type.manage"><LeaveTypes /></PermissionGate>}
+            />
+
+            <Route
+              path="/admin/leave-policies"
+              element={<PermissionGate permission="leave.policy.manage"><LeavePolicies /></PermissionGate>}
             />
 
             <Route
               path="/admin/leave-approval-rules"
-              element={
-                <LeaveApprovalRules />
-              }
+              element={<PermissionGate permission="leave.rule.manage"><LeaveApprovalRules /></PermissionGate>}
             />
 
             <Route
               path="/admin/leave-balances"
-              element={
-                <LeaveBalanceManagement />
-              }
+              element={<PermissionGate permission="leave.balance.manage"><LeaveBalanceManagement /></PermissionGate>}
+            />
+
+            <Route
+              path="/admin/leave-accrual-report"
+              element={<PermissionGate permission="leave.accrual-report.view"><LeaveAccrualReport /></PermissionGate>}
             />
 
             {/* =================================================
@@ -614,8 +626,6 @@ function AppRoutes() {
             }
           />
 
-          </Route>
-
 <Route
   path="/attendance"
   element={<AttendanceEntry />}
@@ -628,8 +638,9 @@ function AppRoutes() {
 
 <Route
   path="/admin/attendance"
-  element={<AttendanceManagement />}
+  element={<PermissionGate permission="attendance.manage"><AttendanceManagement /></PermissionGate>}
 />
+<Route path="/admin/attendance/bulk" element={<PermissionGate permission="attendance.bulk.manage"><BulkAttendance /></PermissionGate>} />
 
 <Route
   path="/admin/attendance/access-based"
@@ -658,6 +669,8 @@ function AppRoutes() {
             />
 
           {/* lastline */}
+
+          </Route>
 
         </Route>
 

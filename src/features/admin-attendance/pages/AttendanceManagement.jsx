@@ -310,6 +310,17 @@ const getUserDistricts = (
 // PAGE
 // ============================================================
 
+
+const exportAttendanceCsv = (rows, selectedDate) => {
+  const headers = ["Employee Name", "Email", "Contact", "Role", "Designation", "District", "Attendance", "Type", "Source", "Check In", "Check Out", "Location"];
+  const escape = (value) => `"${String(value ?? "-").replaceAll('"', '""')}"`;
+  const lines = [headers, ...rows.map(({ user, roles, designations, districts, attendance }) => [
+    user?.name, user?.email, user?.contact, roles?.map(getRoleName).join(", "), designations?.map(getDesignationName).join(", "), districts?.map((d) => d?.districtName || d?.name || d).join(", "), attendance?.status, attendance?.attendanceType, attendance?.attendanceSource, attendance?.checkIn, attendance?.checkOut, attendance?.visitedLocation || attendance?.location
+  ])].map((row) => row.map(escape).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF", lines], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `employee-attendance-${selectedDate || "report"}.csv`; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+};
+
 function AttendanceManagement() {
 
   // ==========================================================
@@ -1591,6 +1602,8 @@ function AttendanceManagement() {
         manualAttendanceReason:
           "",
 
+        checkIn: "",
+        checkOut: "",
         remarks:
           "",
 
@@ -1698,6 +1711,8 @@ function AttendanceManagement() {
           record.manualAttendanceReason ||
           "",
 
+        checkIn: record.checkIn ? new Date(record.checkIn).toTimeString().slice(0,5) : "",
+        checkOut: record.checkOut ? new Date(record.checkOut).toTimeString().slice(0,5) : "",
         remarks:
           record.remarks ||
           "",
@@ -1760,6 +1775,8 @@ function AttendanceManagement() {
         manualAttendanceReason:
           "",
 
+        checkIn: "",
+        checkOut: "",
         remarks:
           "",
 
@@ -1866,6 +1883,8 @@ function AttendanceManagement() {
 
               date:
                 form.date,
+              checkIn: form.checkIn ? `${form.date}T${form.checkIn}:00.000Z` : null,
+              checkOut: form.checkOut ? `${form.date}T${form.checkOut}:00.000Z` : null,
 
               visitedLocation:
                 requiresLocation
@@ -1908,6 +1927,8 @@ function AttendanceManagement() {
 
             date:
               form.date,
+            checkIn: form.checkIn ? `${form.date}T${form.checkIn}:00.000Z` : null,
+            checkOut: form.checkOut ? `${form.date}T${form.checkOut}:00.000Z` : null,
 
             visitedLocation:
               requiresLocation
@@ -1968,6 +1989,8 @@ function AttendanceManagement() {
           manualAttendanceReason:
             "",
 
+          checkIn: "",
+          checkOut: "",
           remarks:
             "",
 
@@ -2662,8 +2685,9 @@ function AttendanceManagement() {
 
               </div>
 
-
-              <div className="text-xs font-medium text-gray-500">
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => exportAttendanceCsv(roster, date)} disabled={!roster.length} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">Export Excel</button>
+                <div className="text-xs font-medium text-gray-500">
 
                 {roster.length}{" "}
                 employee
@@ -2671,6 +2695,7 @@ function AttendanceManagement() {
                   ? "s"
                   : ""}
 
+                </div>
               </div>
 
             </div>
@@ -2739,14 +2764,10 @@ function AttendanceManagement() {
                     </th>
 
 
-                    <th className="px-5 py-3 text-left">
-                      Source
-                    </th>
-
-
-                    <th className="px-5 py-3 text-left">
-                      Location
-                    </th>
+                    <th className="px-5 py-3 text-left">Source</th>
+                    <th className="px-5 py-3 text-left">Check In</th>
+                    <th className="px-5 py-3 text-left">Check Out</th>
+                    <th className="px-5 py-3 text-left">Location</th>
 
 
                     <th className="px-5 py-3 text-left">
@@ -2922,6 +2943,9 @@ function AttendanceManagement() {
 
                         </td>
 
+
+                        <td className="px-5 py-4 whitespace-nowrap">{attendance?.checkIn ? new Date(attendance.checkIn).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : "—"}</td>
+                        <td className="px-5 py-4 whitespace-nowrap">{attendance?.checkOut ? new Date(attendance.checkOut).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : "—"}</td>
 
                         {/* LOCATION */}
 
@@ -3217,6 +3241,15 @@ function AttendanceManagement() {
 
               </div>
 
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="block text-sm font-semibold text-gray-700">Check In Time
+                  <input type="time" name="checkIn" value={form.checkIn || ""} onChange={handleFormChange} className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"/>
+                </label>
+                <label className="block text-sm font-semibold text-gray-700">Check Out Time
+                  <input type="time" name="checkOut" value={form.checkOut || ""} onChange={handleFormChange} className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"/>
+                </label>
+              </div>
 
               {/* =================================================
                   VISITED LOCATION

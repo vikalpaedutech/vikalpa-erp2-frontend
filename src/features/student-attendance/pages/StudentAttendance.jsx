@@ -504,26 +504,28 @@ function StudentAttendance() {
                         });
 
                     const blockData =
-                        response?.data
-                            ?.blocks ||
+                        response?.data?.blocks ||
+                        response?.data?.data?.blocks ||
+                        response?.blocks ||
+                        response?.data?.data ||
                         response?.data ||
                         [];
+                    const normalizedBlockData = Array.isArray(blockData)
+                        ? blockData
+                        : [];
 
-                    if (isGlobalScope) {
-                        setBlocks(
-                            blockData
-                        );
+                    // District-level access grants every block inside the
+                    // selected authorized district. Block/center scopes stay
+                    // restricted to explicitly assigned block IDs.
+                    if (
+                        isGlobalScope ||
+                        hasDistrictScope
+                    ) {
+                        setBlocks(normalizedBlockData);
                     } else {
                         setBlocks(
-                            blockData.filter(
-                                (
-                                    block
-                                ) =>
-                                    blockIds.includes(
-                                        String(
-                                            block._id
-                                        )
-                                    )
+                            normalizedBlockData.filter((block) =>
+                                blockIds.includes(String(block._id))
                             )
                         );
                     }
@@ -546,6 +548,7 @@ function StudentAttendance() {
         showDistrictFilter,
         showBlockFilter,
         hasBlockScope,
+        hasDistrictScope,
         accessibleBlocksFromAccess,
         districtId,
         isGlobalScope,
@@ -571,17 +574,14 @@ function StudentAttendance() {
                 return blocks;
             }
 
-            if (isGlobalScope) {
+            // For district access, blocks are already fetched using the
+            // selected authorized district; do not filter by empty blockIds.
+            if (isGlobalScope || hasDistrictScope) {
                 return blocks;
             }
 
-            return blocks.filter(
-                (block) =>
-                    blockIds.includes(
-                        String(
-                            block._id
-                        )
-                    )
+            return blocks.filter((block) =>
+                blockIds.includes(String(block._id))
             );
         }, [
             blocks,
@@ -621,6 +621,9 @@ function StudentAttendance() {
             return;
         }
 
+        setCenters([]);
+        setCenterId("");
+
         const loadCenters =
             async () => {
                 try {
@@ -636,28 +639,29 @@ function StudentAttendance() {
                         });
 
                     const centerData =
-                        response?.data
-                            ?.centers ||
+                        response?.data?.centers ||
+                        response?.data?.data?.centers ||
+                        response?.centers ||
+                        response?.data?.data ||
                         response?.data ||
                         [];
+                    const normalizedCenterData = Array.isArray(centerData)
+                        ? centerData
+                        : [];
 
+                    // District access can use all centers in the selected
+                    // block. Block access can use all centers in its assigned
+                    // block. Center-only access remains limited to assigned IDs.
                     if (
-                        isGlobalScope
+                        isGlobalScope ||
+                        hasDistrictScope ||
+                        hasBlockScope
                     ) {
-                        setCenters(
-                            centerData
-                        );
+                        setCenters(normalizedCenterData);
                     } else {
                         setCenters(
-                            centerData.filter(
-                                (
-                                    center
-                                ) =>
-                                    centerIds.includes(
-                                        String(
-                                            center._id
-                                        )
-                                    )
+                            normalizedCenterData.filter((center) =>
+                                centerIds.includes(String(center._id))
                             )
                         );
                     }
@@ -681,6 +685,8 @@ function StudentAttendance() {
         showBlockFilter,
         centersFromAccess,
         isGlobalScope,
+        hasDistrictScope,
+        hasBlockScope,
         centerIds,
     ]);
 

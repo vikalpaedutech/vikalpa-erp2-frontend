@@ -31,6 +31,21 @@ const getToday = () => {
   ].join("-");
 };
 
+// Return a clock value only (HH:mm). The attendance date field
+// remains the single source of the calendar date.
+const toTimeInputValue = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+};
+
+const combineAttendanceDateAndTime = (dateValue, timeValue) => {
+  if (!dateValue || !timeValue) return null;
+  const combined = new Date(`${dateValue}T${timeValue}:00`);
+  return Number.isNaN(combined.getTime()) ? null : combined.toISOString();
+};
+
 // ============================================================
 
 const formatDate = (date) => {
@@ -261,6 +276,9 @@ function AccessBasedAttendance() {
 
     date:
       getToday(),
+
+    checkIn: "",
+    checkOut: "",
 
     visitedLocation:
       "",
@@ -1330,6 +1348,9 @@ function AccessBasedAttendance() {
         date:
           markDate,
 
+        checkIn: "",
+        checkOut: "",
+
         visitedLocation:
           "",
 
@@ -1415,6 +1436,9 @@ function AccessBasedAttendance() {
             : fromDate ||
               getToday(),
 
+        checkIn: toTimeInputValue(record.checkIn),
+        checkOut: toTimeInputValue(record.checkOut),
+
         visitedLocation:
           record.visitedLocation ||
           "",
@@ -1473,6 +1497,9 @@ function AccessBasedAttendance() {
         date:
           fromDate ||
           getToday(),
+
+        checkIn: "",
+        checkOut: "",
 
         visitedLocation:
           "",
@@ -1574,6 +1601,9 @@ function AccessBasedAttendance() {
               date:
                 form.date,
 
+              checkIn: combineAttendanceDateAndTime(form.date, form.checkIn),
+              checkOut: combineAttendanceDateAndTime(form.date, form.checkOut),
+
               visitedLocation:
                 requiresLocation
                   ? form.visitedLocation.trim()
@@ -1611,6 +1641,9 @@ function AccessBasedAttendance() {
 
             date:
               form.date,
+
+            checkIn: combineAttendanceDateAndTime(form.date, form.checkIn),
+            checkOut: combineAttendanceDateAndTime(form.date, form.checkOut),
 
             visitedLocation:
               requiresLocation
@@ -2762,6 +2795,36 @@ function AccessBasedAttendance() {
 
                 )}
 
+              </div>
+
+              {/* CHECK IN / CHECK OUT */}
+
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Check-in Time (optional)
+                  </label>
+                  <input
+                    type="time"
+                    name="checkIn"
+                    value={form.checkIn || ""}
+                    onChange={handleFormChange}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Check-out Time (optional)
+                  </label>
+                  <input
+                    type="time"
+                    name="checkOut"
+                    value={form.checkOut || ""}
+                    min={form.checkIn || undefined}
+                    onChange={handleFormChange}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </div>
               </div>
 
               {/* REASON */}

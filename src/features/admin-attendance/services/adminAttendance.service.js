@@ -11,7 +11,7 @@ export const getActiveUsers = async () => {
     {
       params: {
         page: 1,
-        limit: 100,
+        limit: 500,
         isActive: true,
       },
     }
@@ -31,7 +31,7 @@ export const getActiveRoles = async () => {
       params: {
         isActive: true,
         page: 1,
-        limit: 100,
+        limit: 500,
       },
     }
   );
@@ -51,7 +51,7 @@ export const getActiveDepartments = async () => {
       params: {
         isActive: true,
         page: 1,
-        limit: 100,
+        limit: 500,
       },
     }
   );
@@ -71,7 +71,7 @@ export const getActiveDesignations = async () => {
       params: {
         isActive: true,
         page: 1,
-        limit: 100,
+        limit: 500,
       },
     }
   );
@@ -89,7 +89,7 @@ export const getUserRoles = async () => {
     {
       params: {
         page: 1,
-        limit: 100,
+        limit: 500,
         isActive: true,
       },
     }
@@ -109,7 +109,7 @@ export const getUserDesignations = async () => {
     {
       params: {
         page: 1,
-        limit: 100,
+        limit: 500,
       },
     }
   );
@@ -131,7 +131,7 @@ export const getAttendance = async ({
 } = {}) => {
   const params = {
     page: 1,
-    limit: 100,
+    limit: 500,
   };
 
   if (date) {
@@ -232,7 +232,7 @@ export const getUserRegionAccess = async () => {
     {
       params: {
         page: 1,
-        limit: 100,
+        limit: 500,
       },
     }
   );

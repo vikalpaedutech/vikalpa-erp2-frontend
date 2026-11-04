@@ -285,3 +285,29 @@ export const getLeaveApprovalById = async (leaveId) => {
 
   return response.data;
 };
+
+
+// LEAVE POLICIES
+export const getLeavePolicies = async (params = {}) => {
+  const response = await apiClient.get("/user-management/leave-policies", { params });
+  return response.data;
+};
+export const saveLeavePolicy = async (payload) => {
+  const response = await apiClient.post("/user-management/leave-policies", payload);
+  return response.data;
+};
+export const deactivateLeavePolicy = async (policyId) => {
+  const response = await apiClient.patch(`/user-management/leave-policies/${policyId}/deactivate`);
+  return response.data;
+};
+
+// Leave balance directory and spreadsheet import
+export const getLeaveBalanceDirectory = async (params = {}) => {
+  const response = await apiClient.get("/user-management/leave-balances/directory", { params });
+  return response.data;
+};
+
+export const bulkImportLeaveBalances = async (payload) => {
+  const response = await apiClient.post("/user-management/leave-balances/bulk-import", payload);
+  return response.data;
+};

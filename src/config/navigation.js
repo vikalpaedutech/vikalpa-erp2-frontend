@@ -56,7 +56,7 @@ export const administrationItems = [
   { label: "Copy Checking", path: "/copy-checking", permission: "copy-checking.view", section: "STUDENT MANAGEMENT", group: "Student Management", roles: ["admin", "cm", "cc", "aci"] },
   { label: "Class Interaction", path: "/class-interaction", permission: "class-interaction.view", section: "STUDENT MANAGEMENT", group: "Student Management", roles: ["admin", "cm", "cc", "aci"] },
   { label: "Upload Class PDF", path: "/center-wise-attendance", permission: "center-attendance.view", section: "STUDENT MANAGEMENT", group: "Student Management", roles: ["admin", "cm", "cc", "aci"] },
-  { label: "User Attendance", path: "/admin/attendance/access-based", permission: "attendance.access.manage", section: "STUDENT MANAGEMENT", group: "Student Management", roles: ["admin", "aci", "cm"] },
+  { label: "User Attendance", path: "/admin/attendance/access-based", permission: "attendance.access.manage", section: "Attendance & Reports" },
   { label: "Exams/Marks Upload", path: "/exams", permission: "exam.view", section: "ACADEMIC MANAGEMENT", group: "Exam Management", roles: ["admin", "cc", "aci"] },
   { label: "Exam Management", path: "/exam-management", permission: "exam.manage", section: "ACADEMIC MANAGEMENT", group: "Exam Management", roles: ["admin"] },
 
@@ -84,10 +84,14 @@ export const administrationItems = [
   // ============================================================
   // ADMINISTRATIONS / HR / GAMIFICATION
   // ============================================================
+  { label: "Employee", path: "/admin/employees", permission: "hr.employee.view", section: "HR MANAGEMENT", group: "Employee" },
   { label: "Attendance Management", path: "/admin/attendance", permission: "attendance.manage", section: "HR MANAGEMENT", group: "Attendance Management" },
-  { label: "Leave Types", path: "/admin/leave-types", permission: "leave.type.manage", section: "HR MANAGEMENT", group: "Attendance Management", roles: ["admin"] },
-  { label: "Leave Approval Rules", path: "/admin/leave-approval-rules", permission: "leave.rule.manage", section: "HR MANAGEMENT", group: "Attendance Management", roles: ["admin"] },
-  { label: "Leave Balance Management", path: "/admin/leave-balances", permission: "leave.balance.manage", section: "HR MANAGEMENT", group: "Attendance Management", roles: ["admin"] },
+  { label: "Bulk Attendance", path: "/admin/attendance/bulk", permission: "attendance.bulk.manage", section: "HR MANAGEMENT", group: "Attendance Management" },
+  { label: "Leave Types", path: "/admin/leave-types", permission: "leave.type.manage", section: "HR MANAGEMENT", group: "Attendance Management" },
+  { label: "Leave Policies", path: "/admin/leave-policies", permission: "leave.policy.manage", section: "HR MANAGEMENT", group: "Attendance Management" },
+  { label: "Leave Accrual Report", path: "/admin/leave-accrual-report", permission: "leave.accrual-report.view", section: "HR MANAGEMENT", group: "Attendance Management" },
+  { label: "Leave Approval Rules", path: "/admin/leave-approval-rules", permission: "leave.rule.manage", section: "HR MANAGEMENT", group: "Attendance Management" },
+  { label: "Leave Balance Management", path: "/admin/leave-balances", permission: "leave.balance.manage", section: "HR MANAGEMENT", group: "Attendance Management" },
 
   { label: "Gamification Eligible Roles", path: "/admin/gamification/roles", permission: "gamification.role.manage", section: "GAMIFICATION ADMINISTRATIONS", roles: ["admin"] },
   { label: "Gamification Dashboard", path: "/admin/gamification", permission: "gamification.manage", section: "GAMIFICATION ADMINISTRATIONS", roles: ["admin"] },
