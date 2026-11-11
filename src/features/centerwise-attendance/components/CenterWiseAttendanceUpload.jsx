@@ -375,7 +375,7 @@ const CenterWiseAttendanceUpload = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/jpg,image/png"
               onChange={handleFileChange}
               className="hidden"
             />
