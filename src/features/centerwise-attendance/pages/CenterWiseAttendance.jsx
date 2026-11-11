@@ -908,7 +908,7 @@ const CenterWiseAttendance = () => {
 
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="min-w-0 space-y-5 p-3 sm:space-y-6 sm:p-4 md:p-6">
 
       {/* ======================================================
           PAGE HEADER
@@ -917,7 +917,7 @@ const CenterWiseAttendance = () => {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-xl font-bold text-gray-800 sm:text-2xl">
             Center-wise Attendance
           </h1>
 
@@ -941,7 +941,7 @@ const CenterWiseAttendance = () => {
             loading ||
             loadingRegionAccess
           }
-          className="rounded-lg border border-blue-600 bg-white px-5 py-2.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-lg border border-blue-600 bg-white px-4 py-2.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-5"
         >
           Download Attendance Pdf Format
         </button>
@@ -1085,7 +1085,7 @@ const CenterWiseAttendance = () => {
                   true
                 )
               }
-              className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+              className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto"
             >
               Upload Attendance
             </button>

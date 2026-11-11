@@ -149,13 +149,13 @@ function CenterWiseAttendanceFilters({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-5">
 
         {/* ======================================================
             HEADER
         ======================================================= */}
 
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-gray-800">
               Filters
@@ -272,11 +272,11 @@ function CenterWiseAttendanceFilters({
             SEARCH BUTTON
         ======================================================= */}
 
-        <div className="mt-5 flex justify-end">
+        <div className="mt-5 flex justify-stretch sm:justify-end">
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {loading
               ? "Loading..."

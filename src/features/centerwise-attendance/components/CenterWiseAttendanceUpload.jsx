@@ -233,14 +233,14 @@ const CenterWiseAttendanceUpload = ({
   // ============================================================
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-black/50 px-3 py-3 sm:items-center sm:p-4">
+      <div className="my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
 
         {/* ======================================================
             HEADER
         ======================================================= */}
 
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">
               Upload Attendance
@@ -279,7 +279,7 @@ const CenterWiseAttendanceUpload = ({
             BODY
         ======================================================= */}
 
-        <div className="space-y-5 px-6 py-5">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:space-y-5 sm:px-6 sm:py-5">
 
           {/* ====================================================
               SELECTED DETAILS
@@ -384,7 +384,7 @@ const CenterWiseAttendanceUpload = ({
               type="button"
               onClick={handleChooseFile}
               disabled={uploading}
-              className="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-blue-400 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center transition sm:px-5 sm:py-8 hover:border-blue-400 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <div className="flex flex-col items-center">
 
@@ -484,13 +484,13 @@ const CenterWiseAttendanceUpload = ({
             FOOTER
         ======================================================= */}
 
-        <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+        <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-6 sm:py-4">
 
           <button
             type="button"
             onClick={handleClose}
             disabled={uploading}
-            className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             Cancel
           </button>
@@ -499,7 +499,7 @@ const CenterWiseAttendanceUpload = ({
             type="button"
             onClick={handleUpload}
             disabled={uploading || !selectedFile}
-            className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {uploading ? "Uploading..." : "Upload"}
           </button>
