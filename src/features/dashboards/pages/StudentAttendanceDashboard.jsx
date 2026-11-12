@@ -16,7 +16,32 @@ export default function StudentAttendanceDashboard() {
     <RegionFilters filters={filters} setFilters={setFilters} options={options} onApply={load} notMarkedLabel="Not Marked" />
     <ErrorBox message={error} />
     {loading ? <LoadingBox text="Loading region-wise attendance..." /> : data ? <>
-      <section className="grid gap-3 sm:grid-cols-4"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase text-slate-400">Total Students</p><p className="mt-2 text-3xl font-black">{data.summary.totalStudent}</p></div><div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5"><p className="text-xs font-black uppercase text-emerald-700">Present</p><p className="mt-2 text-3xl font-black text-emerald-800">{data.summary.totalPresent}</p></div><div className="rounded-2xl border border-rose-100 bg-rose-50 p-5"><p className="text-xs font-black uppercase text-rose-700">Absent</p><p className="mt-2 text-3xl font-black text-rose-800">{data.summary.totalAbsent}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase text-slate-400">Centers</p><p className="mt-2 text-3xl font-black">{data.summary.centers}</p></div></section>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-black uppercase text-slate-400">Total Students</p>
+          <p className="mt-2 text-3xl font-black">{data.summary.totalStudent}</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+          <p className="text-xs font-black uppercase text-emerald-700">Present</p>
+          <p className="mt-2 text-3xl font-black text-emerald-800">{data.summary.totalPresent}</p>
+        </div>
+        <div className="rounded-2xl border border-rose-100 bg-rose-50 p-5">
+          <p className="text-xs font-black uppercase text-rose-700">Absent</p>
+          <p className="mt-2 text-3xl font-black text-rose-800">{data.summary.totalAbsent}</p>
+        </div>
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
+          <p className="text-xs font-black uppercase text-indigo-700">Present Percentage</p>
+          <p className="mt-2 text-3xl font-black text-indigo-800">
+            {Number(data.summary.totalStudent) > 0
+              ? `${((Number(data.summary.totalPresent || 0) / Number(data.summary.totalStudent)) * 100).toFixed(2)}%`
+              : "0.00%"}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-black uppercase text-slate-400">Centers</p>
+          <p className="mt-2 text-3xl font-black">{data.summary.centers}</p>
+        </div>
+      </section>
       <DashboardTable title="District / Block / Center" rows={data.table} columns={[{ key: "district", label: "District" }, { key: "block", label: "Block" }, { key: "center", label: "Center" }, { key: "totalStudent", label: "Total Student" }, { key: "totalPresent", label: "Total Present" }, { key: "totalAbsent", label: "Total Absent" }, { key: "notMarked", label: "Not Marked", render: (r) => r.notMarked ? <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">Yes</span> : "No" }]} />
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-black text-slate-900">Daily Attendance Trend</h2><div className="mt-4 space-y-3">{(data.trend || []).map((r) => <div key={r.date} className="grid grid-cols-[90px_1fr_70px] items-center gap-3 text-xs"><span className="text-slate-500">{r.date}</span><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${r.attendanceRate}%` }} /></div><span className="text-right font-bold">{r.attendanceRate}%</span></div>)}</div></section>
       <div className="grid gap-6 xl:grid-cols-3">{[["District-wise", data.district], ["Block-wise", data.block], ["Center-wise", data.center]].map(([title, rows]) => <DashboardTable key={title} title={title} rows={rows || []} columns={[{ key: "label", label: title.replace("-wise", "") }, { key: "total", label: "Records" }, { key: "present", label: "Present" }, { key: "absent", label: "Absent" }, { key: "attendanceRate", label: "Rate", render: (r) => `${r.attendanceRate}%` }]} compact />)}</div>
