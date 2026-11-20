@@ -1,122 +1,49 @@
 
 import apiClient from "../../../api/apiClient";
 
-// ============================================================
-// GET ACTIVE USERS
-// ============================================================
-
-export const getActiveUsers = async () => {
-  const response = await apiClient.get(
-    "/user-management/users",
-    {
-      params: {
-        page: 1,
-        limit: 500,
-        isActive: true,
-      },
-    }
-  );
-
-  return response.data;
+// Fetch every page because several backend list endpoints cap page size at 100.
+const getAllPages = async (url, extraParams = {}) => {
+  const all = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const response = await apiClient.get(url, {
+      params: { ...extraParams, page, limit: 100 },
+    });
+    const payload = response.data?.data;
+    const list = Array.isArray(payload) ? payload :
+      payload?.users || payload?.roles || payload?.departments ||
+      payload?.designations || payload?.userRoles ||
+      payload?.userDesignations || payload?.userRegionAccess ||
+      payload?.regionAccess || [];
+    all.push(...list);
+    const pagination = payload?.pagination || response.data?.pagination;
+    totalPages = Number(pagination?.totalPages) || (list.length === 100 ? page + 1 : page);
+    page += 1;
+  } while (page <= totalPages && page <= 100);
+  return { data: all };
 };
 
-// ============================================================
-// GET ACTIVE ROLES
-// ============================================================
+export const getActiveUsers = () =>
+  getAllPages("/user-management/users", { isActive: true });
 
-export const getActiveRoles = async () => {
-  const response = await apiClient.get(
-    "/permissions-management/roles",
-    {
-      params: {
-        isActive: true,
-        page: 1,
-        limit: 500,
-      },
-    }
-  );
+export const getActiveRoles = () =>
+  getAllPages("/permissions-management/roles", { isActive: true });
 
-  return response.data;
-};
+export const getActiveDepartments = () =>
+  getAllPages("/department", { isActive: true });
 
+export const getActiveDesignations = () =>
+  getAllPages("/designation", { isActive: true });
 
-// ============================================================
-// GET ACTIVE DEPARTMENTS
-// ============================================================
+export const getUserRoles = () =>
+  getAllPages("/user-management/user-roles", { isActive: true });
 
-export const getActiveDepartments = async () => {
-  const response = await apiClient.get(
-    "/department",
-    {
-      params: {
-        isActive: true,
-        page: 1,
-        limit: 500,
-      },
-    }
-  );
+export const getUserDesignations = () =>
+  getAllPages("/user-management/user-designations");
 
-  return response.data;
-};
-
-
-// ============================================================
-// GET ACTIVE DESIGNATIONS
-// ============================================================
-
-export const getActiveDesignations = async () => {
-  const response = await apiClient.get(
-    "/designation",
-    {
-      params: {
-        isActive: true,
-        page: 1,
-        limit: 500,
-      },
-    }
-  );
-
-  return response.data;
-};
-
-// ============================================================
-// GET USER ROLE MAPPINGS
-// ============================================================
-
-export const getUserRoles = async () => {
-  const response = await apiClient.get(
-    "/user-management/user-roles",
-    {
-      params: {
-        page: 1,
-        limit: 500,
-        isActive: true,
-      },
-    }
-  );
-
-  return response.data;
-};
-
-
-// ============================================================
-// GET USER DESIGNATION MAPPINGS
-// ============================================================
-
-export const getUserDesignations = async () => {
-  const response = await apiClient.get(
-    "/user-management/user-designations",
-    {
-      params: {
-        page: 1,
-        limit: 500,
-      },
-    }
-  );
-
-  return response.data;
-};
-
+export const getUserRegionAccess = () =>
+  getAllPages("/user-management/user-region-access");
 
 // ============================================================
 // GET ATTENDANCE
@@ -124,6 +51,8 @@ export const getUserDesignations = async () => {
 
 export const getAttendance = async ({
   date,
+  fromDate,
+  toDate,
   userId,
   attendanceType,
   status,
@@ -131,12 +60,15 @@ export const getAttendance = async ({
 } = {}) => {
   const params = {
     page: 1,
-    limit: 500,
+    limit: 5000,
   };
 
   if (date) {
     params.fromDate = date;
     params.toDate = date;
+  } else {
+    if (fromDate) params.fromDate = fromDate;
+    if (toDate) params.toDate = toDate;
   }
 
   if (userId) {
@@ -179,6 +111,8 @@ export const markUserAttendance = async ({
   attendanceType,
   status,
   date,
+  checkIn,
+  checkOut,
   visitedLocation,
   manualAttendanceReason,
   remarks,
@@ -191,6 +125,8 @@ export const markUserAttendance = async ({
       attendanceType,
       status,
       date,
+      checkIn,
+      checkOut,
       visitedLocation,
       manualAttendanceReason,
       remarks,
@@ -222,23 +158,6 @@ export const updateUserAttendance = async (
 
 
 
-// ============================================================
-// GET USER REGION ACCESS
-// ============================================================
-
-export const getUserRegionAccess = async () => {
-  const response = await apiClient.get(
-    "/user-management/user-region-access",
-    {
-      params: {
-        page: 1,
-        limit: 500,
-      },
-    }
-  );
-
-  return response.data?.data;
-};
 
 
 

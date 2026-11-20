@@ -27,6 +27,20 @@ import {
 // HELPERS
 // ============================================================
 
+const getMonthStart = () => {
+  const now = new Date();
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), "01"].join("-");
+};
+
+// Convert a local date + time input into an ISO timestamp without
+// incorrectly treating the entered local clock time as UTC.
+const toAttendanceTimestamp = (date, time) => {
+  if (!date || !time) return null;
+  const localDate = new Date(`${date}T${time}:00`);
+  return Number.isNaN(localDate.getTime()) ? null : localDate.toISOString();
+};
+
+
 const getToday = () => {
   const date = new Date();
 
@@ -311,15 +325,16 @@ const getUserDistricts = (
 // ============================================================
 
 
-const exportAttendanceCsv = (rows, selectedDate) => {
-  const headers = ["Employee Name", "Email", "Contact", "Role", "Designation", "District", "Attendance", "Type", "Source", "Check In", "Check Out", "Location"];
+const exportCsv = (headers, rows, filename) => {
   const escape = (value) => `"${String(value ?? "-").replaceAll('"', '""')}"`;
-  const lines = [headers, ...rows.map(({ user, roles, designations, districts, attendance }) => [
-    user?.name, user?.email, user?.contact, roles?.map(getRoleName).join(", "), designations?.map(getDesignationName).join(", "), districts?.map((d) => d?.districtName || d?.name || d).join(", "), attendance?.status, attendance?.attendanceType, attendance?.attendanceSource, attendance?.checkIn, attendance?.checkOut, attendance?.visitedLocation || attendance?.location
-  ])].map((row) => row.map(escape).join(",")).join("\r\n");
+  const lines = [headers, ...rows].map((row) => row.map(escape).join(",")).join("\r\n");
   const blob = new Blob(["\uFEFF", lines], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `employee-attendance-${selectedDate || "report"}.csv`; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url; link.download = filename; document.body.appendChild(link);
+  link.click(); link.remove(); URL.revokeObjectURL(url);
 };
+const formatClock = (value) => value ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "-";
 
 function AttendanceManagement() {
 
@@ -356,10 +371,9 @@ function AttendanceManagement() {
   // FILTERS
   // ==========================================================
 
-  const [date, setDate] =
-    useState(
-      getToday()
-    );
+  const [fromDate, setFromDate] = useState(getMonthStart());
+  const [toDate, setToDate] = useState(getToday());
+  const [selectedDetailUser, setSelectedDetailUser] = useState(null);
 
 
   const [selectedRole, setSelectedRole] =
@@ -697,26 +711,28 @@ function AttendanceManagement() {
           // ROLES
           // --------------------------------------------------
 
-          const roleList =
-            roleMappings
-              .map(
-                (item) =>
-                  item?.roleId
-              )
-              .filter(Boolean);
+          const mappedRoleList = roleMappings
+            .map((item) => item?.roleId || item?.role || item?.roleData)
+            .filter(Boolean);
+          const directRoles = Array.isArray(user?.roles) ? user.roles : (user?.role ? [user.role] : []);
+          const roleList = [...mappedRoleList, ...directRoles]
+            .map((role) => typeof role === "object" ? (roles.find((r) => getId(r) === getId(role)) || role) : roles.find((r) => getId(r) === getId(role)))
+            .filter(Boolean)
+            .filter((role, index, list) => list.findIndex((item) => getId(item) === getId(role)) === index);
 
 
           // --------------------------------------------------
           // DESIGNATIONS
           // --------------------------------------------------
 
-          const designationList =
-            designationMappings
-              .map(
-                (item) =>
-                  item?.designationId
-              )
-              .filter(Boolean);
+          const designationList = designationMappings
+            .map((item) => item?.designationId || item?.designation)
+            .filter(Boolean)
+            .map((designation) => typeof designation === "object"
+              ? (designations.find((item) => getId(item) === getId(designation)) || designation)
+              : designations.find((item) => getId(item) === getId(designation)))
+            .filter(Boolean)
+            .filter((item, index, list) => list.findIndex((entry) => getId(entry) === getId(item)) === index);
 
 
           // --------------------------------------------------
@@ -851,7 +867,12 @@ function AttendanceManagement() {
               designations:
                 designationList,
 
-              departmentIds,
+              departmentIds: [
+                ...new Set([
+                  ...departmentIds.map(String),
+                  ...designationList.map((designation) => getId(designation?.departmentId || designation?.department)).filter(Boolean),
+                ]),
+              ],
 
               districts,
             }
@@ -868,6 +889,8 @@ function AttendanceManagement() {
       userRoles,
       userDesignations,
       userRegionAccess,
+      roles,
+      designations,
     ]);
 
 
@@ -1068,19 +1091,11 @@ function AttendanceManagement() {
         const response =
           await getAttendance({
 
-            date,
+            fromDate,
+            toDate,
 
-            attendanceType:
-              attendanceType ||
-              undefined,
-
-            status:
-              status ||
-              undefined,
-
-            attendanceSource:
-              attendanceSource ||
-              undefined,
+            // Fetch all records in the selected date range so missing
+            // attendance documents can be counted as absent accurately.
 
           });
 
@@ -1200,7 +1215,8 @@ function AttendanceManagement() {
     }
 
   }, [
-    date,
+    fromDate,
+    toDate,
     attendanceType,
     status,
     attendanceSource,
@@ -1319,13 +1335,14 @@ function AttendanceManagement() {
        * Attendance Source filter
        */
 
-      return filteredUsers.filter(
-        (user) =>
-          attendanceMap.has(
-            String(
-              user._id
-            )
-          )
+      return filteredUsers.filter((user) =>
+        attendance.some((record) => {
+          if (getId(record.userId) !== String(user._id)) return false;
+          if (status && record.status !== status) return false;
+          if (attendanceType && record.attendanceType !== attendanceType) return false;
+          if (attendanceSource && record.attendanceSource !== attendanceSource) return false;
+          return true;
+        })
       );
 
     }, [
@@ -1392,6 +1409,209 @@ function AttendanceManagement() {
       userMeta,
     ]);
 
+
+
+  const getDateKeysInRange = (start, end) => {
+    if (!start || !end || start > end) return [];
+    const dates = [];
+    const cursor = new Date(`${start}T12:00:00`);
+    const finish = new Date(`${end}T12:00:00`);
+    while (cursor <= finish) {
+      const key = [cursor.getFullYear(), String(cursor.getMonth() + 1).padStart(2, "0"), String(cursor.getDate()).padStart(2, "0")].join("-");
+      dates.push({ key, isSunday: cursor.getDay() === 0 });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return dates;
+  };
+
+  const selectedDates = useMemo(
+    () => getDateKeysInRange(fromDate, toDate),
+    [fromDate, toDate]
+  );
+  const workingDates = useMemo(
+    () => selectedDates.filter((date) => !date.isSunday),
+    [selectedDates]
+  );
+
+  const summaryRows = useMemo(() => roster.map((item) => {
+    const userId = getId(item.user);
+    const records = attendance.filter((record) => getId(record.userId) === userId);
+    const recordsByDate = new Map();
+    records.forEach((record) => {
+      const dateKey = String(record.date || "").slice(0, 10);
+      if (!recordsByDate.has(dateKey)) recordsByDate.set(dateKey, []);
+      recordsByDate.get(dateKey).push(record);
+    });
+
+    let present = 0;
+    let absent = 0;
+    let wfh = 0;
+    let leaves = 0;
+
+    // A working day without any UserAttendance document is counted as Absent.
+    // Sundays are excluded from Total Days and all attendance totals.
+    workingDates.forEach(({ key }) => {
+      const dayRecords = recordsByDate.get(key) || [];
+      const statuses = dayRecords.map((record) => record.status);
+      if (statuses.includes("Present")) present += 1;
+      else if (statuses.includes("WFH")) wfh += 1;
+      else if (statuses.includes("Leave")) leaves += 1;
+      else absent += 1;
+    });
+
+    return {
+      ...item,
+      records,
+      totalDays: workingDates.length,
+      present,
+      absent,
+      wfh,
+      leaves,
+      sundays: selectedDates.length - workingDates.length,
+      recordsByDate,
+    };
+  }), [roster, attendance, workingDates, selectedDates]);
+
+  const detailRecords = useMemo(() => {
+    if (!selectedDetailUser || !fromDate || !toDate || fromDate > toDate) return [];
+    const selected = summaryRows.find((row) => getId(row.user) === getId(selectedDetailUser));
+    const rows = [];
+    selectedDates.forEach(({ key, isSunday }) => {
+      const matches = (selected?.recordsByDate.get(key) || []);
+      if (matches.length) rows.push(...matches);
+      else rows.push({ _id: `missing-${key}`, date: key, __missing: true, __sunday: isSunday, status: isSunday ? "Sunday" : "Absent" });
+    });
+    return rows.reverse();
+  }, [summaryRows, selectedDetailUser, selectedDates, fromDate, toDate]);
+
+  const exportSummary = () => exportCsv(
+    ["Employee","Role","Designation","District","Attendance Type","Source","Total Days","Total Present","Total Absent","Total Sundays","WFH","Leaves"],
+    summaryRows.map((r) => [
+      r.user.name,
+      r.roles.map(getRoleName).join(", "),
+      r.designations.map(getDesignationName).join(", "),
+      r.districts.map((d) => d.name).join(", "),
+      [...new Set(r.records.map((x) => x.attendanceType).filter(Boolean))].join(", "),
+      [...new Set(r.records.map((x) => x.attendanceSource).filter(Boolean))].join(", "),
+      r.totalDays, r.present, r.absent, r.sundays, r.wfh, r.leaves,
+    ]),
+    `attendance-summary-${fromDate}-to-${toDate}.csv`
+  );
+
+  const xmlEscape = (value) => String(value ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
+  const downloadExcelWorkbook = (sheets, filename) => {
+    const workbookSheets = sheets.map((sheet, sheetIndex) => {
+      const rowsXml = sheet.rows.map((row) => {
+        const cellsXml = row.map((cell) => {
+          if (cell && typeof cell === "object" && cell.mergeAcross !== undefined) {
+            return `<Cell ss:MergeAcross="${cell.mergeAcross}" ss:StyleID="Header"><Data ss:Type="String">${xmlEscape(cell.value)}</Data></Cell>`;
+          }
+          const value = cell && typeof cell === "object" && "value" in cell ? cell.value : cell;
+          const style = cell && typeof cell === "object" && cell.header ? ' ss:StyleID="Header"' : "";
+          return `<Cell${style}><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`;
+        }).join("");
+        return `<Row>${cellsXml}</Row>`;
+      }).join("");
+      return `<Worksheet ss:Name="${xmlEscape(sheet.name)}"><Table>${rowsXml}</Table></Worksheet>`;
+    }).join("");
+
+    const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles><Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#D9EAF7" ss:Pattern="Solid"/></Style></Styles>
+ ${workbookSheets}
+</Workbook>`;
+    const blob = new Blob(["\\uFEFF", xml], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportDetailed = () => {
+    const detailedRows = [];
+    const matrixHeaderTop = [
+      "_id", "Employee Name", "Email", "userId", "Contact", "Role", "Designation", "District",
+      ...selectedDates.map(({ key, isSunday }) => ({
+        value: `${key.split("-").reverse().join("-")}${isSunday ? " (Sunday)" : ""}`,
+        mergeAcross: 1,
+      })),
+    ];
+    const matrixHeaderSub = [
+      "", "", "", "", "", "", "", "",
+      ...selectedDates.flatMap(() => ["Check In", "Check Out"]),
+    ];
+    const matrixRows = [matrixHeaderTop, matrixHeaderSub];
+
+    summaryRows.forEach((row) => {
+      const identity = [
+        getId(row.user), row.user.name, row.user.email, row.user.userId || "",
+        row.user.contact || row.user.phone || row.user.personalContact || row.user.mobile || "",
+        row.roles.map(getRoleName).join(", "),
+        row.designations.map(getDesignationName).join(", "),
+        row.districts.map((district) => district.name).join(", "),
+      ];
+
+      selectedDates.forEach(({ key, isSunday }) => {
+        const records = row.recordsByDate.get(key) || [];
+        if (records.length) {
+          records.forEach((record) => detailedRows.push([
+            row.user.name, row.user.email, row.user.contact || row.user.phone || row.user.personalContact || row.user.mobile || "",
+            row.roles.map(getRoleName).join(", "),
+            row.designations.map(getDesignationName).join(", "),
+            row.districts.map((district) => district.name).join(", "),
+            key.split("-").reverse().join("-"),
+            record.status || "", record.attendanceType || "", record.attendanceSource || "",
+            formatClock(record.checkIn), formatClock(record.checkOut), record.visitedLocation || "",
+          ]));
+        } else {
+          detailedRows.push([
+            row.user.name, row.user.email, row.user.contact || row.user.phone || row.user.personalContact || row.user.mobile || "",
+            row.roles.map(getRoleName).join(", "),
+            row.designations.map(getDesignationName).join(", "),
+            row.districts.map((district) => district.name).join(", "),
+            key.split("-").reverse().join("-"),
+            isSunday ? "Sunday" : "Absent", "", "", "", "", "",
+          ]);
+        }
+      });
+
+      const matrixValues = selectedDates.flatMap(({ key }) => {
+        const records = row.recordsByDate.get(key) || [];
+        return [
+          records.map((record) => record.checkIn ? formatClock(record.checkIn) : "").filter(Boolean).join(" / "),
+          records.map((record) => record.checkOut ? formatClock(record.checkOut) : "").filter(Boolean).join(" / "),
+        ];
+      });
+      matrixRows.push([...identity, ...matrixValues]);
+    });
+
+    const firstSheetRows = [
+      ["Employee Name","Email","Contact","Role","Designation","District","Date","Attendance","Type","Source","Check In","Check Out","Location"],
+      ...detailedRows,
+    ].map((row, index) => index === 0 ? row.map((value) => ({ value, header: true })) : row);
+
+    downloadExcelWorkbook([
+      { name: "Detailed Report", rows: firstSheetRows },
+      { name: "Date-wise Check In Out", rows: matrixRows },
+    ], `attendance-detailed-${fromDate}-to-${toDate}.xls`);
+  };
+
+  const exportEmployeeTotals = () => exportCsv(
+    ["Employee Name","Email","Total Days","Total Present","Total Absent","Total Sundays","WFH","Leaves"],
+    summaryRows.map((r) => [r.user.name,r.user.email,r.totalDays,r.present,r.absent,r.sundays,r.wfh,r.leaves]),
+    `employee-attendance-totals-${fromDate}-to-${toDate}.csv`
+  );
 
   // ==========================================================
   // SUMMARY
@@ -1561,7 +1781,7 @@ function AttendanceManagement() {
   // ==========================================================
 
   const openMarkModal =
-    (user) => {
+    (user, attendanceDate = null) => {
 
       setEditingId(
         null
@@ -1594,7 +1814,7 @@ function AttendanceManagement() {
         status:
           "Present",
 
-        date,
+        date: attendanceDate || (fromDate === toDate ? fromDate : getToday()),
 
         visitedLocation:
           "",
@@ -1701,7 +1921,7 @@ function AttendanceManagement() {
                 0,
                 10
               )
-            : date,
+            : fromDate,
 
         visitedLocation:
           record.visitedLocation ||
@@ -1767,7 +1987,7 @@ function AttendanceManagement() {
         status:
           "Present",
 
-        date,
+        date: fromDate === toDate ? fromDate : getToday(),
 
         visitedLocation:
           "",
@@ -1832,30 +2052,6 @@ function AttendanceManagement() {
       }
 
 
-      if (
-        !form.manualAttendanceReason.trim()
-      ) {
-
-        setError(
-          "Manual attendance reason is required."
-        );
-
-        return;
-      }
-
-
-      if (
-        !form.remarks.trim()
-      ) {
-
-        setError(
-          "Remarks are required."
-        );
-
-        return;
-      }
-
-
       try {
 
         setSubmitting(
@@ -1883,8 +2079,8 @@ function AttendanceManagement() {
 
               date:
                 form.date,
-              checkIn: form.checkIn ? `${form.date}T${form.checkIn}:00.000Z` : null,
-              checkOut: form.checkOut ? `${form.date}T${form.checkOut}:00.000Z` : null,
+              checkIn: toAttendanceTimestamp(form.date, form.checkIn),
+              checkOut: toAttendanceTimestamp(form.date, form.checkOut),
 
               visitedLocation:
                 requiresLocation
@@ -1927,8 +2123,8 @@ function AttendanceManagement() {
 
             date:
               form.date,
-            checkIn: form.checkIn ? `${form.date}T${form.checkIn}:00.000Z` : null,
-            checkOut: form.checkOut ? `${form.date}T${form.checkOut}:00.000Z` : null,
+            checkIn: toAttendanceTimestamp(form.date, form.checkIn),
+            checkOut: toAttendanceTimestamp(form.date, form.checkOut),
 
             visitedLocation:
               requiresLocation
@@ -1981,7 +2177,7 @@ function AttendanceManagement() {
           status:
             "Present",
 
-          date,
+          date: fromDate === toDate ? fromDate : getToday(),
 
           visitedLocation:
             "",
@@ -2034,6 +2230,9 @@ function AttendanceManagement() {
   const clearFilters =
     () => {
 
+      setFromDate(getMonthStart());
+      setToDate(getToday());
+      setSelectedDetailUser(null);
       setSelectedRole(
         ""
       );
@@ -2112,7 +2311,7 @@ function AttendanceManagement() {
           </h1>
 
           <p className="mt-1 text-sm text-gray-500">
-            Employee-wise attendance for the selected date.
+            Employee-wise attendance summary for the selected date range.
           </p>
 
         </div>
@@ -2207,32 +2406,13 @@ function AttendanceManagement() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 
 
-            {/* ==================================================
-                DATE
-            ================================================== */}
-
             <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Attendance Date
-              </label>
-
-
-              <input
-                type="date"
-                value={
-                  date
-                }
-                onChange={(
-                  event
-                ) =>
-                  setDate(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              />
-
+              <label className="mb-2 block text-sm font-semibold text-gray-700">Start Date</label>
+              <input type="date" value={fromDate} max={toDate} onChange={(event) => setFromDate(event.target.value)} className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"/>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">End Date</label>
+              <input type="date" value={toDate} min={fromDate} max={getToday()} onChange={(event) => setToDate(event.target.value)} className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"/>
             </div>
 
 
@@ -2668,10 +2848,7 @@ function AttendanceManagement() {
               <div>
 
                 <h2 className="font-semibold text-gray-900">
-                  Employee Attendance —{" "}
-                  {formatDate(
-                    date
-                  )}
+                  Employee Attendance — {formatDate(fromDate)} to {formatDate(toDate)}
                 </h2>
 
 
@@ -2686,7 +2863,9 @@ function AttendanceManagement() {
               </div>
 
               <div className="flex items-center gap-3">
-                <button type="button" onClick={() => exportAttendanceCsv(roster, date)} disabled={!roster.length} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">Export Excel</button>
+                <button type="button" onClick={exportSummary} disabled={!summaryRows.length} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Export Summary</button>
+                <button type="button" onClick={exportDetailed} disabled={!attendance.length} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Export Detailed</button>
+                <button type="button" onClick={exportEmployeeTotals} disabled={!summaryRows.length} className="rounded-xl bg-slate-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Export Employee Totals</button>
                 <div className="text-xs font-medium text-gray-500">
 
                 {roster.length}{" "}
@@ -2728,292 +2907,43 @@ function AttendanceManagement() {
 
             <div className="overflow-x-auto">
 
-              <table className="min-w-full text-sm">
-
-                <thead className="bg-gray-50">
-
-                  <tr>
-
-                    <th className="px-5 py-3 text-left">
-                      Employee
-                    </th>
-
-
-                    <th className="px-5 py-3 text-left">
-                      Role
-                    </th>
-
-
-                    <th className="px-5 py-3 text-left">
-                      Designation
-                    </th>
-
-
-                    <th className="px-5 py-3 text-left">
-                      District
-                    </th>
-
-
-                    <th className="px-5 py-3 text-left">
-                      Attendance
-                    </th>
-
-
-                    <th className="px-5 py-3 text-left">
-                      Type
-                    </th>
-
-
-                    <th className="px-5 py-3 text-left">Source</th>
-                    <th className="px-5 py-3 text-left">Check In</th>
-                    <th className="px-5 py-3 text-left">Check Out</th>
-                    <th className="px-5 py-3 text-left">Location</th>
-
-
-                    <th className="px-5 py-3 text-left">
-                      Action
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-
-                <tbody className="divide-y">
-
-                  {roster.map(
-                    ({
-                      user,
-                      roles,
-                      designations,
-                      districts: userDistricts,
-                      attendance,
-                    }) => (
-
-                      <tr
-                        key={
-                          user._id
-                        }
-                        className="hover:bg-gray-50"
-                      >
-
-
-                        {/* EMPLOYEE */}
-
-                        <td className="px-5 py-4">
-
-                          <div className="font-semibold text-gray-900">
-                            {user.name}
-                          </div>
-
-                          <div className="text-xs text-gray-500">
-                            {user.email}
-                          </div>
-
-                        </td>
-
-
-                        {/* ROLE */}
-
-                        <td className="px-5 py-4">
-
-                          <div className="flex flex-wrap gap-1">
-
-                            {roles.length
-                              ? roles.map(
-                                  (
-                                    role
-                                  ) => (
-
-                                    <span
-                                      key={
-                                        role?._id
-                                      }
-                                      className="rounded-full bg-indigo-50 px-2 py-1 text-xs text-indigo-700"
-                                    >
-                                      {getRoleName(
-                                        role
-                                      )}
-                                    </span>
-
-                                  )
-                                )
-                              : "-"}
-
-                          </div>
-
-                        </td>
-
-
-                        {/* DESIGNATION */}
-
-                        <td className="px-5 py-4">
-
-                          {designations.length
-                            ? designations
-                                .map(
-                                  (
-                                    designation
-                                  ) =>
-                                    getDesignationName(
-                                      designation
-                                    )
-                                )
-                                .join(
-                                  ", "
-                                )
-                            : "-"}
-
-                        </td>
-
-
-                        {/* DISTRICT */}
-
-                        <td className="px-5 py-4">
-
-                          {userDistricts?.length
-                            ? userDistricts
-                                .map(
-                                  (
-                                    district
-                                  ) =>
-                                    district?.name
-                                )
-                                .filter(Boolean)
-                                .join(
-                                  ", "
-                                )
-                            : "-"}
-
-                        </td>
-
-
-                        {/* ATTENDANCE */}
-
-                        <td className="px-5 py-4">
-
-                          {attendance ? (
-
-                            <span
-                              className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
-                                attendance.status
-                              )}`}
-                            >
-                              {
-                                attendance.status
-                              }
-                            </span>
-
-                          ) : (
-
-                            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-                              Not Marked
-                            </span>
-
-                          )}
-
-                        </td>
-
-
-                        {/* TYPE */}
-
-                        <td className="px-5 py-4">
-                          {
-                            attendance?.attendanceType ||
-                            "-"
-                          }
-                        </td>
-
-
-                        {/* SOURCE */}
-
-                        <td className="px-5 py-4">
-
-                          {attendance ? (
-
-                            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                              {
-                                attendance.attendanceSource
-                              }
-                            </span>
-
-                          ) : (
-                            "-"
-                          )}
-
-                        </td>
-
-
-                        <td className="px-5 py-4 whitespace-nowrap">{attendance?.checkIn ? new Date(attendance.checkIn).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : "—"}</td>
-                        <td className="px-5 py-4 whitespace-nowrap">{attendance?.checkOut ? new Date(attendance.checkOut).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : "—"}</td>
-
-                        {/* LOCATION */}
-
-                        <td className="px-5 py-4">
-
-                          {
-                            attendance?.visitedLocation ||
-                            "-"
-                          }
-
-                        </td>
-
-
-                        {/* ACTION */}
-
-                        <td className="px-5 py-4">
-
-                          {attendance ? (
-
-                            attendance.attendanceSource !==
-                            "Leave" ? (
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openEditModal(
-                                    attendance
-                                  )
-                                }
-                                className="font-semibold text-indigo-600 hover:text-indigo-800"
-                              >
-                                Edit
-                              </button>
-
-                            ) : (
-
-                              <span className="text-xs text-gray-400">
-                                System
-                              </span>
-
-                            )
-
-                          ) : (
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openMarkModal(
-                                  user
-                                )
-                              }
-                              className="font-semibold text-indigo-600 hover:text-indigo-800"
-                            >
-                              Mark
-                            </button>
-
-                          )}
-
-                        </td>
-
-                      </tr>
-
-                    )
-                  )}
-
-                </tbody>
-
-              </table>
+              {selectedDetailUser ? (
+                <div className="p-5">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <button type="button" onClick={() => setSelectedDetailUser(null)} className="mb-2 text-sm font-semibold text-indigo-600">← Back to employees</button>
+                      <h3 className="text-lg font-bold text-gray-900">{selectedDetailUser.name} — Attendance Details</h3>
+                      <p className="text-sm text-gray-500">{formatDate(fromDate)} to {formatDate(toDate)}</p>
+                    </div>
+                    <button type="button" onClick={() => openMarkModal(selectedDetailUser)} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Mark Attendance</button>
+                  </div>
+                  <div className="overflow-x-auto"><table className="min-w-full text-sm">
+                    <thead className="bg-gray-50"><tr>{["Date","Check In","Check Out","Attendance Type","Source","Location","Action"].map((h) => <th key={h} className="px-4 py-3 text-left">{h}</th>)}</tr></thead>
+                    <tbody className="divide-y">
+                      {detailRecords.map((record) => <tr key={record._id}>
+                        <td className="px-4 py-3">{formatDate(record.date)}</td><td className="px-4 py-3">{formatClock(record.checkIn)}</td><td className="px-4 py-3">{formatClock(record.checkOut)}</td>
+                        <td className="px-4 py-3">{record.attendanceType || "-"}</td><td className="px-4 py-3">{record.attendanceSource || "-"}</td><td className="px-4 py-3">{record.visitedLocation || "-"}</td>
+                        <td className="px-4 py-3">{record.__missing ? <button type="button" onClick={() => openMarkModal(selectedDetailUser, record.date)} className="font-semibold text-indigo-600">Mark</button> : record.attendanceSource === "Leave" ? <span className="text-xs text-gray-400">System</span> : <button type="button" onClick={() => openEditModal(record)} className="font-semibold text-indigo-600">Mark / Edit</button>}</td>
+                      </tr>)}
+                      {!detailRecords.length && <tr><td colSpan="7" className="p-8 text-center text-gray-500">No attendance records in this date range.</td></tr>}
+                    </tbody>
+                  </table></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto"><table className="min-w-full text-sm">
+                  <thead className="bg-gray-50"><tr>{["Employee","Role","Designation","District","Attendance Type","Source","Total Present","Total Absent","Total Sundays","WFH","Leaves","Action"].map((h) => <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>)}</tr></thead>
+                  <tbody className="divide-y">
+                    {summaryRows.map((row) => <tr key={row.user._id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3"><div className="font-semibold">{row.user.name}</div><div className="text-xs text-gray-500">{row.user.email}</div></td>
+                      <td className="px-4 py-3">{row.roles.map(getRoleName).join(", ") || "-"}</td><td className="px-4 py-3">{row.designations.map(getDesignationName).join(", ") || "-"}</td>
+                      <td className="px-4 py-3">{row.districts.map((d) => d.name).join(", ") || "-"}</td><td className="px-4 py-3">{[...new Set(row.records.map((r) => r.attendanceType).filter(Boolean))].join(", ") || "-"}</td>
+                      <td className="px-4 py-3">{[...new Set(row.records.map((r) => r.attendanceSource).filter(Boolean))].join(", ") || "-"}</td>
+                      <td className="px-4 py-3 font-semibold text-green-700">{row.present}</td><td className="px-4 py-3 font-semibold text-red-700">{row.absent}</td><td className="px-4 py-3">{row.sundays}</td><td className="px-4 py-3">{row.wfh}</td><td className="px-4 py-3">{row.leaves}</td>
+                      <td className="px-4 py-3"><button type="button" onClick={() => setSelectedDetailUser(row.user)} className="rounded-lg bg-indigo-50 px-3 py-2 font-semibold text-indigo-700">Manage</button></td>
+                    </tr>)}
+                  </tbody>
+                </table></div>
+              )}
 
             </div>
 
@@ -3290,7 +3220,7 @@ function AttendanceManagement() {
               <div>
 
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Manual Attendance Reason *
+                  Manual Attendance Reason
                 </label>
 
 
@@ -3304,7 +3234,7 @@ function AttendanceManagement() {
                     handleFormChange
                   }
                   placeholder="Why is attendance being marked manually?"
-                  required
+
                   className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 />
 
@@ -3318,7 +3248,7 @@ function AttendanceManagement() {
               <div>
 
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Remarks *
+                  Remarks
                 </label>
 
 
@@ -3332,7 +3262,7 @@ function AttendanceManagement() {
                   }
                   rows={4}
                   placeholder="Enter attendance remarks..."
-                  required
+                  
                   className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 />
 

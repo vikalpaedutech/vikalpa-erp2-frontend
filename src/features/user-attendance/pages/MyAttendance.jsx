@@ -65,6 +65,72 @@ const getToday = () => {
 };
 
 
+const getDateKey = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+};
+
+
+const buildDailyAttendance = (records, startDate, endDate) => {
+  const recordsByDate = new Map();
+
+  records.forEach((record) => {
+    const key = getDateKey(record.date);
+    if (key) recordsByDate.set(key, record);
+  });
+
+  if (!startDate || !endDate || startDate > endDate) return [];
+
+  const rows = [];
+  const cursor = new Date(`${startDate}T12:00:00`);
+  const end = new Date(`${endDate}T12:00:00`);
+
+  while (cursor <= end) {
+    const key = formatInputDate(cursor);
+    const isSunday = cursor.getDay() === 0;
+    const record = recordsByDate.get(key);
+
+    if (isSunday) {
+      rows.push({
+        _id: record?._id || `sunday-${key}`,
+        date: `${key}T00:00:00.000Z`,
+        status: "Sunday",
+        attendanceType: "",
+        checkIn: null,
+        checkOut: null,
+        attendanceSource: "",
+        remarks: "",
+        __synthetic: !record,
+      });
+    } else if (record) {
+      rows.push(record);
+    } else {
+      rows.push({
+        _id: `absent-${key}`,
+        date: `${key}T00:00:00.000Z`,
+        status: "Absent",
+        attendanceType: "",
+        checkIn: null,
+        checkOut: null,
+        attendanceSource: "",
+        remarks: "",
+        __synthetic: true,
+      });
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return rows.reverse();
+};
+
+
 // ============================================================
 // PAGE
 // ============================================================
@@ -107,16 +173,16 @@ function MyAttendance() {
         await getMyAttendance({
           fromDate,
           toDate,
-          attendanceType:
-            attendanceType || undefined,
-          status:
-            status || undefined,
           page: 1,
-          limit: 100,
+          limit: 5000,
         });
 
       setAttendance(
-        response?.data || []
+        buildDailyAttendance(
+          response?.data || [],
+          fromDate,
+          toDate
+        )
       );
     } catch (err) {
       console.error(err);
@@ -136,18 +202,29 @@ function MyAttendance() {
   }, []);
 
 
+  const filteredAttendance = useMemo(() => {
+    return attendance.filter((item) => {
+      if (status && item.status !== status) return false;
+      if (
+        attendanceType &&
+        item.attendanceType !== attendanceType
+      ) return false;
+      return true;
+    });
+  }, [attendance, status, attendanceType]);
+
+
   // ==========================================================
   // DOWNLOAD EXCEL
   // ==========================================================
 
   const downloadReport = () => {
-    if (!attendance.length) {
+    if (!filteredAttendance.length) {
       return;
     }
 
-    const rows = attendance.map((item) => ({
+    const rows = filteredAttendance.map((item) => ({
       Date: formatDate(item.date),
-      "Attendance Type": item.attendanceType || "",
       Status: item.status || "",
       "Check In": item.checkIn
         ? new Date(item.checkIn).toLocaleTimeString()
@@ -155,7 +232,6 @@ function MyAttendance() {
       "Check Out": item.checkOut
         ? new Date(item.checkOut).toLocaleTimeString()
         : "",
-      Source: item.attendanceSource || "",
       "Visited Location": item.visitedLocation || "",
       Remarks: item.remarks || "",
     }));
@@ -165,11 +241,9 @@ function MyAttendance() {
       sheetName: "Attendance",
       columns: [
         { key: "Date", label: "Date" },
-        { key: "Attendance Type", label: "Attendance Type" },
         { key: "Status", label: "Status" },
         { key: "Check In", label: "Check In" },
         { key: "Check Out", label: "Check Out" },
-        { key: "Source", label: "Source" },
         { key: "Visited Location", label: "Visited Location" },
         { key: "Remarks", label: "Remarks" },
       ],
@@ -183,8 +257,8 @@ function MyAttendance() {
 
   const summary =
     useMemo(
-      () => attendance,
-      [attendance]
+      () => filteredAttendance,
+      [filteredAttendance]
     );
 
 
@@ -385,7 +459,7 @@ function MyAttendance() {
               Loading attendance...
             </div>
 
-          ) : attendance.length === 0 ? (
+          ) : filteredAttendance.length === 0 ? (
 
             <div className="p-10 text-center text-sm text-gray-500">
               No attendance records found.
@@ -404,12 +478,7 @@ function MyAttendance() {
                     <th className="px-5 py-3 text-left font-semibold text-gray-600">
                       Date
                     </th>
-
-                    <th className="px-5 py-3 text-left font-semibold text-gray-600">
-                      Type
-                    </th>
-
-                    <th className="px-5 py-3 text-left font-semibold text-gray-600">
+<th className="px-5 py-3 text-left font-semibold text-gray-600">
                       Status
                     </th>
 
@@ -419,10 +488,6 @@ function MyAttendance() {
 
                     <th className="px-5 py-3 text-left font-semibold text-gray-600">
                       Check Out
-                    </th>
-
-                    <th className="px-5 py-3 text-left font-semibold text-gray-600">
-                      Source
                     </th>
 
                     <th className="px-5 py-3 text-left font-semibold text-gray-600">
@@ -436,7 +501,7 @@ function MyAttendance() {
 
                 <tbody className="divide-y">
 
-                  {attendance.map(
+                  {filteredAttendance.map(
                     (item) => (
                       <tr
                         key={item._id}
@@ -448,12 +513,7 @@ function MyAttendance() {
                             item.date
                           )}
                         </td>
-
-                        <td className="px-5 py-4">
-                          {item.attendanceType && item.attendanceType !== "null" ? item.attendanceType : "—"}
-                        </td>
-
-                        <td className="px-5 py-4">
+<td className="px-5 py-4">
 
                           <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold">
                             {item.status}
@@ -475,11 +535,6 @@ function MyAttendance() {
                                 item.checkOut
                               ).toLocaleTimeString()
                             : "-"}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          {item.attendanceSource ||
-                            "-"}
                         </td>
 
                         <td className="px-5 py-4">
