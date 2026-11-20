@@ -70,6 +70,7 @@ export const administrationItems = [
   { label: "Batches", path: "/admin/batches", permission: "batch.view", section: "ADMINISTRATIONS", group: "Program, Batch, Region Admin", roles: ["admin"] },
   { label: "Department", path: "/admin/departments", permission: "department.manage", section: "ADMINISTRATIONS", group: "Program, Batch, Region Admin", roles: ["admin"] },
   { label: "Designation", path: "/admin/designations", permission: "designation.manage", section: "ADMINISTRATIONS", group: "Program, Batch, Region Admin", roles: ["admin"] },
+  { label: "Biometric Attendance", path: "/admin/biometric/attendance", section: "ADMINISTRATIONS", group: "Program, Batch, Region Admin", roles: ["admin"] },
 
   // ============================================================
   // FINANCE
