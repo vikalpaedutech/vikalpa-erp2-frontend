@@ -32,12 +32,28 @@ const getMonthStart = () => {
   return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), "01"].join("-");
 };
 
-// Convert a local date + time input into an ISO timestamp without
-// incorrectly treating the entered local clock time as UTC.
+// Treat admin-entered attendance clock values as India local time (IST)
+// and convert them explicitly to UTC before sending them to MongoDB.
 const toAttendanceTimestamp = (date, time) => {
   if (!date || !time) return null;
-  const localDate = new Date(`${date}T${time}:00`);
-  return Number.isNaN(localDate.getTime()) ? null : localDate.toISOString();
+  const dateMatch = String(date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeMatch = String(time).match(/^(\d{1,2}):(\d{2})$/);
+  if (!dateMatch || !timeMatch) return null;
+
+  const [, year, month, day] = dateMatch;
+  const hours = Number(timeMatch[1]);
+  const minutes = Number(timeMatch[2]);
+  if (hours > 23 || minutes > 59) return null;
+
+  const utcMilliseconds = Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    hours,
+    minutes
+  ) - (5 * 60 + 30) * 60 * 1000;
+
+  return new Date(utcMilliseconds).toISOString();
 };
 
 
@@ -334,7 +350,32 @@ const exportCsv = (headers, rows, filename) => {
   link.href = url; link.download = filename; document.body.appendChild(link);
   link.click(); link.remove(); URL.revokeObjectURL(url);
 };
-const formatClock = (value) => value ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "-";
+const formatClock = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
+
+const formatClockInputIST = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const hour = parts.find((part) => part.type === "hour")?.value || "00";
+  const minute = parts.find((part) => part.type === "minute")?.value || "00";
+  return `${hour}:${minute}`;
+};
 
 function AttendanceManagement() {
 
@@ -1931,8 +1972,8 @@ function AttendanceManagement() {
           record.manualAttendanceReason ||
           "",
 
-        checkIn: record.checkIn ? new Date(record.checkIn).toTimeString().slice(0,5) : "",
-        checkOut: record.checkOut ? new Date(record.checkOut).toTimeString().slice(0,5) : "",
+        checkIn: formatClockInputIST(record.checkIn),
+        checkOut: formatClockInputIST(record.checkOut),
         remarks:
           record.remarks ||
           "",
@@ -2051,6 +2092,25 @@ function AttendanceManagement() {
         return;
       }
 
+      // Never submit an invalid/non-empty clock value as null: doing so
+      // would overwrite the existing MongoDB checkIn/checkOut timestamps.
+      const checkInTimestamp = form.checkIn
+        ? toAttendanceTimestamp(form.date, form.checkIn)
+        : null;
+      const checkOutTimestamp = form.checkOut
+        ? toAttendanceTimestamp(form.date, form.checkOut)
+        : null;
+
+      if (form.checkIn && !checkInTimestamp) {
+        setError("Invalid Check In time. Please enter a valid 24-hour time.");
+        return;
+      }
+
+      if (form.checkOut && !checkOutTimestamp) {
+        setError("Invalid Check Out time. Please enter a valid 24-hour time.");
+        return;
+      }
+
 
       try {
 
@@ -2079,8 +2139,8 @@ function AttendanceManagement() {
 
               date:
                 form.date,
-              checkIn: toAttendanceTimestamp(form.date, form.checkIn),
-              checkOut: toAttendanceTimestamp(form.date, form.checkOut),
+              checkIn: checkInTimestamp,
+              checkOut: checkOutTimestamp,
 
               visitedLocation:
                 requiresLocation
@@ -2123,8 +2183,8 @@ function AttendanceManagement() {
 
             date:
               form.date,
-            checkIn: toAttendanceTimestamp(form.date, form.checkIn),
-            checkOut: toAttendanceTimestamp(form.date, form.checkOut),
+            checkIn: checkInTimestamp,
+            checkOut: checkOutTimestamp,
 
             visitedLocation:
               requiresLocation

@@ -4,8 +4,6 @@ import {
   getBiometricUsers,
   getBiometricAttendance,
   getBiometricUserAttendanceByDate,
-  manageBiometricUserAttendanceDay,
-  pushBiometricAttendance,
 } from "../services/biometricAttendance.service";
 
 const today = () => {
@@ -57,9 +55,6 @@ export default function BiometricAttendance() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [editing, setEditing] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [pushing, setPushing] = useState(false);
 
   const loadSummary = useCallback(async () => {
     if (!fromDate || !toDate || fromDate > toDate) {
@@ -181,50 +176,7 @@ export default function BiometricAttendance() {
     URL.revokeObjectURL(url);
   };
 
-  const openManage = (row) => setEditing({
-    date: row.date,
-    punchIn: timeInput(row.checkIn?.eventTime || row.checkIn?.rawEvent?.time),
-    punchOut: timeInput(row.checkOut?.eventTime || row.checkOut?.rawEvent?.time),
-  });
 
-  const saveManage = async () => {
-    if (!editing) return;
-    setSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      await manageBiometricUserAttendanceDay(biometricUserId, editing.date, {
-        punchIn: editing.punchIn,
-        punchOut: editing.punchOut,
-      });
-      setEditing(null);
-      setNotice("Biometric attendance saved successfully.");
-      await loadDetail();
-    } catch (e) {
-      setError(e?.response?.data?.message || "Unable to save biometric attendance.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const pushRange = async () => {
-    if (!fromDate || !toDate || fromDate > toDate) {
-      setError("Please select a valid date range.");
-      return;
-    }
-    if (!window.confirm(`Push biometric attendance from ${fromDate} to ${toDate} into UserAttendances?`)) return;
-    setPushing(true);
-    setError("");
-    setNotice("");
-    try {
-      const data = responseData(await pushBiometricAttendance({ fromDate, toDate }));
-      setNotice(`Attendance pushed. Created: ${data.created || 0}, Updated: ${data.updated || 0}, Unmatched: ${data.unmatched || 0}.`);
-    } catch (e) {
-      setError(e?.response?.data?.message || "Attendance push failed.");
-    } finally {
-      setPushing(false);
-    }
-  };
 
   return (
     <main className="space-y-5 p-4 md:p-6">
@@ -251,7 +203,6 @@ export default function BiometricAttendance() {
                 <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search Emp ID, employee name or employee no. string" className="mt-1 block w-full rounded-xl border px-3 py-2.5 text-sm"/>
               </label>
               <button onClick={exportReport} disabled={!summaryRows.length || loading} className="rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">Export Report</button>
-              <button onClick={pushRange} disabled={pushing || loading} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{pushing ? "Pushing..." : "Update User Attendance"}</button>
             </div>
           </section>
 
@@ -311,13 +262,12 @@ export default function BiometricAttendance() {
             {loading ? <p className="p-10 text-center text-slate-500">Loading attendance...</p> : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{["Date", "Check In", "Check Out", "Action"].map((label) => <th key={label} className="whitespace-nowrap px-5 py-3">{label}</th>)}</tr></thead>
+                  <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{["Date", "Check In", "Check Out"].map((label) => <th key={label} className="whitespace-nowrap px-5 py-3">{label}</th>)}</tr></thead>
                   <tbody className="divide-y">
                     {dailyRows.map((row) => <tr key={row.date} className="hover:bg-slate-50">
                       <td className="whitespace-nowrap px-5 py-3 font-medium">{dateLabel(row.date)}</td>
                       <td className="px-5 py-3">{timeLabel(row.checkIn?.eventTime || row.checkIn?.rawEvent?.time)}</td>
                       <td className="px-5 py-3">{timeLabel(row.checkOut?.eventTime || row.checkOut?.rawEvent?.time)}</td>
-                      <td className="px-5 py-3"><button onClick={() => openManage(row)} className="rounded-lg border border-blue-200 px-4 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50">Manage</button></td>
                     </tr>)}
                   </tbody>
                 </table>
@@ -328,23 +278,7 @@ export default function BiometricAttendance() {
         </>
       )}
 
-      {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900">Manage Biometric Attendance</h3>
-            <p className="mt-1 text-sm text-slate-500">{dateLabel(editing.date)} · {employee?.employeeName || ""}</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="text-sm font-semibold text-slate-700">Check In<input type="time" value={editing.punchIn} onChange={(e) => setEditing((v) => ({ ...v, punchIn: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2.5"/></label>
-              <label className="text-sm font-semibold text-slate-700">Check Out<input type="time" value={editing.punchOut} onChange={(e) => setEditing((v) => ({ ...v, punchOut: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2.5"/></label>
-            </div>
-            <p className="mt-3 text-xs text-slate-500">Leave Check Out blank if the employee has only one punch.</p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => setEditing(null)} className="rounded-xl border px-4 py-2 text-sm font-semibold">Cancel</button>
-              <button onClick={saveManage} disabled={saving || (!editing.punchIn && !editing.punchOut)} className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{saving ? "Saving..." : "Save / Update"}</button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </main>
   );
 }

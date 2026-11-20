@@ -24,12 +24,27 @@ import { downloadExcel } from "../../../utils/excelExport";
 // HELPERS
 // ============================================================
 
+const formatAttendanceTime = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+};
+
+
 const formatDate = (date) => {
   if (!date) return "-";
 
   return new Date(date).toLocaleDateString(
     "en-IN",
     {
+      timeZone: "Asia/Kolkata",
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -227,10 +242,10 @@ function MyAttendance() {
       Date: formatDate(item.date),
       Status: item.status || "",
       "Check In": item.checkIn
-        ? new Date(item.checkIn).toLocaleTimeString()
+        ? formatAttendanceTime(item.checkIn)
         : "",
       "Check Out": item.checkOut
-        ? new Date(item.checkOut).toLocaleTimeString()
+        ? formatAttendanceTime(item.checkOut)
         : "",
       "Visited Location": item.visitedLocation || "",
       Remarks: item.remarks || "",
@@ -523,17 +538,13 @@ function MyAttendance() {
 
                         <td className="px-5 py-4">
                           {item.checkIn
-                            ? new Date(
-                                item.checkIn
-                              ).toLocaleTimeString()
+                            ? formatAttendanceTime(item.checkIn)
                             : "-"}
                         </td>
 
                         <td className="px-5 py-4">
                           {item.checkOut
-                            ? new Date(
-                                item.checkOut
-                              ).toLocaleTimeString()
+                            ? formatAttendanceTime(item.checkOut)
                             : "-"}
                         </td>
 
