@@ -5,3 +5,6 @@ export const getBiometricUserAttendanceByDate = (id, params = {}) => apiClient.g
 export const manageBiometricUserAttendanceDay = (id, date, payload) => apiClient.put(`/user-management/biometric/attendance/users/${id}/days/${date}`, payload);
 export const updateBiometricLog = (id, eventTime) => apiClient.patch(`/user-management/biometric/attendance/logs/${id}`, { eventTime });
 export const pushBiometricAttendance = (payload) => apiClient.post("/user-management/biometric/attendance/push", payload);
+export const updateBiometricUser = (id, payload) => apiClient.patch(`/user-management/biometric/users/${id}`, payload);
+export const downloadBiometricUsersTemplate = () => apiClient.get("/user-management/biometric/users/template", { responseType: "blob" });
+export const bulkUpdateBiometricUsers = (file) => { const form = new FormData(); form.append("file", file); return apiClient.post("/user-management/biometric/users/bulk", form, { headers: { "Content-Type": "multipart/form-data" } }); };

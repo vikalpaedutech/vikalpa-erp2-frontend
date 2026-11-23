@@ -100,6 +100,7 @@ import EmployeeProfile from "../features/hrms/pages/EmployeeProfile";
 import BulkAttendance from "../features/admin-attendance/pages/BulkAttendance";
 import AccessBasedAttendance from "../features/admin-attendance/pages/AccessBasedAttendance";
 import BiometricAttendance from "../features/biometric-attendance/pages/BiometricAttendance";
+import BiometricUsers from "../features/biometric-attendance/pages/BiometricUsers";
 import GamificationDashboard from "../features/gamification/pages/GamificationDashboard";
 import GamificationRoles from "../features/gamification/pages/GamificationRoles";
 import GamificationParticipants from "../features/gamification/pages/GamificationParticipants";
@@ -642,6 +643,7 @@ function AppRoutes() {
   element={<PermissionGate permission="attendance.manage"><AttendanceManagement /></PermissionGate>}
 />
 <Route path="/admin/attendance/bulk" element={<PermissionGate permission="attendance.bulk.manage"><BulkAttendance /></PermissionGate>} />
+<Route path="/admin/biometric/users" element={<BiometricUsers />} />
 <Route path="/admin/biometric/attendance" element={<BiometricAttendance />} />
 <Route path="/admin/biometric/attendance/:biometricUserId" element={<BiometricAttendance />} />
 

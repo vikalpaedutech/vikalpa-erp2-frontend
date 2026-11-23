@@ -21,6 +21,7 @@ import {
   markUserAttendance,
   updateUserAttendance,
 } from "../services/adminAttendance.service";
+import { getBiometricUsers } from "../../biometric-attendance/services/biometricAttendance.service";
 
 
 // ============================================================
@@ -406,6 +407,18 @@ function AttendanceManagement() {
 
   const [attendance, setAttendance] =
     useState([]);
+
+  const [biometricUsers, setBiometricUsers] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    getBiometricUsers({ page: 1, limit: 500 }).then((response) => {
+      const data = response?.data?.data?.users || response?.data?.users || [];
+      if (active) setBiometricUsers(data);
+    }).catch((error) => console.error("Unable to load biometric user timings for attendance export:", error));
+    return () => { active = false; };
+  }, []);
+
 
 
   // ==========================================================
@@ -1580,71 +1593,100 @@ function AttendanceManagement() {
   };
 
   const exportDetailed = () => {
+    const getAccessDetails = (user) => {
+      const userId = getId(user);
+      const accesses = userRegionAccess.filter((access) => getId(access.userId) === userId);
+      const scopeNames = [...new Set(accesses.map((a) => String(a.scope || "").toLowerCase()).filter(Boolean))];
+      const scopeLabel = scopeNames.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(", ");
+      const namesFor = (field) => [...new Set(accesses.filter((a) => {
+        const scope = String(a.scope || "").toLowerCase();
+        if (field === "district") return ["district", "block", "center"].includes(scope);
+        if (field === "block") return ["block", "center"].includes(scope);
+        return scope === "center";
+      }).map((a) => {
+        let value = a[`${field}Id`] || a[field];
+        if (field === "district" && !value) value = a.blockId?.districtId || a.centerId?.districtId;
+        if (field === "block" && !value) value = a.centerId?.blockId;
+        return typeof value === "object" ? (value?.[`${field}Name`] || value?.name || value?._id || "") : (value || "");
+      }).filter(Boolean).map(String))];
+      const departmentNames = (userMeta.get(userId)?.departmentIds || []).map((id) => {
+        const d = departments.find((item) => getId(item) === String(id));
+        return d?.departmentName || d?.name || "";
+      }).filter(Boolean);
+      return {
+        department: [...new Set(departmentNames)].join(", "),
+        scope: scopeLabel,
+        district: scopeNames.includes("global") ? "" : namesFor("district").join(", ") || (scopeNames.includes("district") ? (userMeta.get(userId)?.districts || []).map((d) => d.name).join(", ") : ""),
+        block: scopeNames.includes("global") ? "" : namesFor("block").join(", "),
+        center: scopeNames.includes("global") ? "" : namesFor("center").join(", "),
+      };
+    };
+    const biometricByEmpId = new Map();
+    biometricUsers.forEach((bio) => { if (bio.empId) biometricByEmpId.set(String(bio.empId), bio); });
+    const identityFor = (row) => {
+      const user = row.user;
+      const region = getAccessDetails(user);
+      return [getId(user), user.name || "", user.email || "", user.userId || "", user.contact || user.phone || user.personalContact || user.mobile || "", row.roles.map(getRoleName).join(", "), row.designations.map(getDesignationName).join(", "), region.department, region.scope, region.district, region.block, region.center];
+    };
+    const dateLabel = (key, isSunday) => `${key.split("-").reverse().join("-")}${isSunday ? " (Sunday)" : ""}`;
     const detailedRows = [];
-    const matrixHeaderTop = [
-      "_id", "Employee Name", "Email", "userId", "Contact", "Role", "Designation", "District",
-      ...selectedDates.map(({ key, isSunday }) => ({
-        value: `${key.split("-").reverse().join("-")}${isSunday ? " (Sunday)" : ""}`,
-        mergeAcross: 1,
-      })),
-    ];
-    const matrixHeaderSub = [
-      "", "", "", "", "", "", "", "",
-      ...selectedDates.flatMap(() => ["Check In", "Check Out"]),
-    ];
-    const matrixRows = [matrixHeaderTop, matrixHeaderSub];
+    const detailHeaders = ["_id", "Employee Name", "Email", "userId", "Contact", "Role", "Designation", "Department", "Access Scope", "District", "Block", "Center", "Date", "Attendance", "Type", "Source", "Check In", "Check Out", "Location"];
+    const matrixHeaders = ["_id", "Employee Name", "Email", "userId", "Contact", "Role", "Designation", "Department", "Access Scope", "District", "Block", "Center", ...selectedDates.map(({ key, isSunday }) => ({ value: dateLabel(key, isSunday), mergeAcross: 1 }))];
+    const matrixSubHeader = [...Array(12).fill(""), ...selectedDates.flatMap(() => ["Check In", "Check Out"])];
+    const presentSummaryRows = [[...detailHeaders.slice(0, 12), ...selectedDates.map(({ key, isSunday }) => dateLabel(key, isSunday)), "Total Present", "Total Absent", "Total Sundays", "Total Days"]];
+    const lateRows = [[...detailHeaders.slice(0, 12), "Date", "Attendance", "Check In", "Check Out", "Location", "Late Coming (Minutes)", "Early Departure (Minutes)", "Total Working Hours"]];
+    const minutesOf = (value) => {
+      if (!value) return null;
+      const clock = typeof value === "string" && /^\d{2}:\d{2}$/.test(value) ? value : formatClockInputIST(value);
+      const match = String(clock || "").match(/^(\d{2}):(\d{2})$/);
+      return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+    };
+    const diffText = (value) => value == null ? "" : String(Math.max(0, value));
+    const formatHours = (minutes) => minutes == null ? "" : `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+    const matrixRows = [[...matrixHeaders], matrixSubHeader];
 
     summaryRows.forEach((row) => {
-      const identity = [
-        getId(row.user), row.user.name, row.user.email, row.user.userId || "",
-        row.user.contact || row.user.phone || row.user.personalContact || row.user.mobile || "",
-        row.roles.map(getRoleName).join(", "),
-        row.designations.map(getDesignationName).join(", "),
-        row.districts.map((district) => district.name).join(", "),
-      ];
-
+      const identity = identityFor(row);
+      const bio = biometricByEmpId.get(String(row.user.userId || "")) || {};
+      const officeMinutes = minutesOf(bio.officeTime);
+      const leaveMinutes = minutesOf(bio.leaveTime);
+      const dayStatuses = [];
       selectedDates.forEach(({ key, isSunday }) => {
         const records = row.recordsByDate.get(key) || [];
-        if (records.length) {
-          records.forEach((record) => detailedRows.push([
-            row.user.name, row.user.email, row.user.contact || row.user.phone || row.user.personalContact || row.user.mobile || "",
-            row.roles.map(getRoleName).join(", "),
-            row.designations.map(getDesignationName).join(", "),
-            row.districts.map((district) => district.name).join(", "),
-            key.split("-").reverse().join("-"),
-            record.status || "", record.attendanceType || "", record.attendanceSource || "",
-            formatClock(record.checkIn), formatClock(record.checkOut), record.visitedLocation || "",
-          ]));
-        } else {
-          detailedRows.push([
-            row.user.name, row.user.email, row.user.contact || row.user.phone || row.user.personalContact || row.user.mobile || "",
-            row.roles.map(getRoleName).join(", "),
-            row.designations.map(getDesignationName).join(", "),
-            row.districts.map((district) => district.name).join(", "),
-            key.split("-").reverse().join("-"),
-            isSunday ? "Sunday" : "Absent", "", "", "", "", "",
-          ]);
-        }
+        const record = records[0] || null;
+        const status = isSunday ? "Sunday" : (records.some((r) => ["Present", "WFH"].includes(r.status)) ? "P" : "A");
+        dayStatuses.push(status);
+        if (records.length) records.forEach((r) => detailedRows.push([...identity, key.split("-").reverse().join("-"), r.status || "", r.attendanceType || "", r.attendanceSource || "", formatClock(r.checkIn), formatClock(r.checkOut), r.visitedLocation || ""]));
+        else detailedRows.push([...identity, key.split("-").reverse().join("-"), isSunday ? "Sunday" : "Absent", "", "", "", "", ""]);
+        const checkInMin = minutesOf(record?.checkIn);
+          const checkOutMin = minutesOf(record?.checkOut);
+          const late = officeMinutes != null && checkInMin != null ? Math.max(0, checkInMin - officeMinutes) : null;
+          const early = leaveMinutes != null && checkOutMin != null ? Math.max(0, leaveMinutes - checkOutMin) : null;
+          const actualDuration = checkInMin != null && checkOutMin != null ? Math.max(0, checkOutMin - checkInMin) : null;
+          const configuredMinutes = Number.isFinite(Number(bio.workingHours)) && bio.workingHours !== "" && bio.workingHours != null ? Number(bio.workingHours) * 60 : null;
+          const duration = isSunday ? null : (configuredMinutes != null && checkInMin != null && checkOutMin != null
+            ? Math.max(0, configuredMinutes - (late || 0) - (early || 0))
+            : actualDuration);
+        lateRows.push([...identity, key.split("-").reverse().join("-"), isSunday ? "Sunday" : (record?.status || "Absent"), formatClock(record?.checkIn), formatClock(record?.checkOut), record?.visitedLocation || "", isSunday ? "" : diffText(late), isSunday ? "" : diffText(early), formatHours(duration)]);
       });
-
       const matrixValues = selectedDates.flatMap(({ key }) => {
         const records = row.recordsByDate.get(key) || [];
-        return [
-          records.map((record) => record.checkIn ? formatClock(record.checkIn) : "").filter(Boolean).join(" / "),
-          records.map((record) => record.checkOut ? formatClock(record.checkOut) : "").filter(Boolean).join(" / "),
-        ];
+        return [records.map((record) => record.checkIn ? formatClock(record.checkIn) : "").filter(Boolean).join(" / "), records.map((record) => record.checkOut ? formatClock(record.checkOut) : "").filter(Boolean).join(" / ")];
       });
       matrixRows.push([...identity, ...matrixValues]);
+      const totalPresent = dayStatuses.filter((x) => x === "P").length;
+      const totalSundays = dayStatuses.filter((x) => x === "Sunday").length;
+      const totalAbsent = dayStatuses.filter((x) => x === "A").length;
+      presentSummaryRows.push([...identity, ...dayStatuses, totalPresent, totalAbsent, totalSundays, selectedDates.length]);
     });
-
-    const firstSheetRows = [
-      ["Employee Name","Email","Contact","Role","Designation","District","Date","Attendance","Type","Source","Check In","Check Out","Location"],
-      ...detailedRows,
-    ].map((row, index) => index === 0 ? row.map((value) => ({ value, header: true })) : row);
-
+    const firstSheetRows = [[...detailHeaders].map((value) => ({ value, header: true })), ...detailedRows];
+    const presentRows = presentSummaryRows.map((row, index) => index === 0 ? row.map((value) => ({ value, header: true })) : row);
+    const lateComingRows = lateRows.map((row, index) => index === 0 ? row.map((value) => ({ value, header: true })) : row);
     downloadExcelWorkbook([
       { name: "Detailed Report", rows: firstSheetRows },
       { name: "Date-wise Check In Out", rows: matrixRows },
+      { name: "Present Summary", rows: presentRows },
+      { name: "Late Coming Early Departure", rows: lateComingRows },
     ], `attendance-detailed-${fromDate}-to-${toDate}.xls`);
   };
 
