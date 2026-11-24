@@ -4,12 +4,11 @@ import Select from "react-select";
 import apiClient from "../../../api/apiClient";
 import { getLeaveTypes, getLeavePolicies, saveLeavePolicy, deactivateLeavePolicy } from "../services/userLeave.service";
 
-const blank = { leaveTypeId: "", eligibility: { applyToAll: true, roles: [], designations: [], users: [] }, accrualFrequency: "none", accrualAmount: 0, annualEntitlement: 0, carryForwardAllowed: false, maxCarryForward: 0, expiryMonths: 0, effectiveFrom: new Date().toISOString().slice(0, 10), description: "", isActive: true };
+const blank = { leaveTypeId: "", eligibility: { applyToAll: true, designations: [], users: [] }, accrualFrequency: "none", accrualAmount: 0, annualEntitlement: 0, carryForwardAllowed: false, maxCarryForward: 0, expiryMonths: 0, effectiveFrom: new Date().toISOString().slice(0, 10), description: "", isActive: true };
 
 export default function LeavePolicies() {
   const [types, setTypes] = useState([]);
   const [policies, setPolicies] = useState([]);
-  const [roles, setRoles] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(blank);
@@ -22,16 +21,14 @@ export default function LeavePolicies() {
   const load = async () => {
     try {
       setLoading(true); setError("");
-      const [typeRes, policyRes, roleRes, designationRes, userRes] = await Promise.all([
+      const [typeRes, policyRes, designationRes, userRes] = await Promise.all([
         getLeaveTypes({ isActive: true }),
         getLeavePolicies(),
-        apiClient.get("/permissions-management/roles/active"),
         apiClient.get("/designation/active"),
         apiClient.get("/user-management/users", { params: { page: 1, limit: 100, isActive: true } }),
       ]);
       setTypes(Array.isArray(typeRes?.data) ? typeRes.data : []);
       setPolicies(Array.isArray(policyRes?.data) ? policyRes.data : []);
-      setRoles(Array.isArray(roleRes?.data?.data) ? roleRes.data.data : Array.isArray(roleRes?.data) ? roleRes.data : []);
       setDesignations(Array.isArray(designationRes?.data?.data) ? designationRes.data.data : Array.isArray(designationRes?.data) ? designationRes.data : []);
       const userData = userRes?.data?.data?.users || userRes?.data?.users || [];
       setUsers(Array.isArray(userData) ? userData : []);
@@ -54,7 +51,6 @@ export default function LeavePolicies() {
       leaveTypeId: p.leaveTypeId?._id || p.leaveTypeId || "",
       eligibility: {
         applyToAll: p.eligibility?.applyToAll !== false,
-        roles: (p.eligibility?.roles || []).map(x => x?._id || x),
         designations: (p.eligibility?.designations || []).map(x => x?._id || x),
         users: (p.eligibility?.users || []).map(x => x?._id || x),
       },
@@ -100,7 +96,7 @@ export default function LeavePolicies() {
           <select name="accrualFrequency" value={form.accrualFrequency} onChange={change} className={field}><option value="none">No automatic accrual</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="half_yearly">Half-yearly</option><option value="yearly">Yearly</option></select>
         </label>
         <label className="text-sm font-medium text-gray-700">Accrual Amount (per cycle)
-          <input type="number" min="0" step="0.5" name="accrualAmount" value={form.accrualAmount} onChange={change} className={field} />
+          <input type="number" min="0" step="0.01" name="accrualAmount" value={form.accrualAmount} onChange={change} className={field} />
         </label>
         <label className="text-sm font-medium text-gray-700">Annual Entitlement (days)
           <input type="number" min="0" step="0.5" name="annualEntitlement" value={form.annualEntitlement} onChange={change} className={field} />
@@ -128,28 +124,24 @@ export default function LeavePolicies() {
           Apply to all employees
         </label>
         {!form.eligibility.applyToAll && <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <label className="text-sm font-medium text-gray-700">Eligible Roles
-            <Select
-              isMulti
-              isSearchable
-              closeMenuOnSelect={false}
-              options={roles.map(r => ({ value: r._id, label: `${r.roleName || r.name || "Role"}${r.roleCode ? ` (${r.roleCode})` : ""}` }))}
-              value={roles.filter(r => form.eligibility.roles.includes(r._id)).map(r => ({ value: r._id, label: `${r.roleName || r.name || "Role"}${r.roleCode ? ` (${r.roleCode})` : ""}` }))}
-              onChange={selected => setForm(p => ({ ...p, eligibility: { ...p.eligibility, roles: (selected || []).map(x => x.value) } }))}
-              placeholder="Search and select roles..."
-              noOptionsMessage={() => "No roles found"}
-              className="mt-1"
-              classNamePrefix="react-select"
-            />
-          </label>
           <label className="text-sm font-medium text-gray-700">Eligible Designations
             <Select
               isMulti
               isSearchable
               closeMenuOnSelect={false}
-              options={designations.map(d => ({ value: d._id, label: `${d.designation || d.name || "Designation"}${d.designationCode ? ` (${d.designationCode})` : ""}` }))}
+              options={[
+                { value: "__select_all_designations__", label: "Select All Designations" },
+                ...designations.map(d => ({ value: d._id, label: `${d.designation || d.name || "Designation"}${d.designationCode ? ` (${d.designationCode})` : ""}` }))
+              ]}
               value={designations.filter(d => form.eligibility.designations.includes(d._id)).map(d => ({ value: d._id, label: `${d.designation || d.name || "Designation"}${d.designationCode ? ` (${d.designationCode})` : ""}` }))}
-              onChange={selected => setForm(p => ({ ...p, eligibility: { ...p.eligibility, designations: (selected || []).map(x => x.value) } }))}
+              onChange={selected => {
+                const values = (selected || []).map(x => x.value);
+                const allIds = designations.map(d => d._id);
+                const next = values.includes("__select_all_designations__")
+                  ? (form.eligibility.designations.length === allIds.length ? [] : allIds)
+                  : values.filter(value => value !== "__select_all_designations__");
+                setForm(p => ({ ...p, eligibility: { ...p.eligibility, designations: next } }));
+              }}
               placeholder="Search and select designations..."
               noOptionsMessage={() => "No designations found"}
               className="mt-1"
@@ -176,7 +168,7 @@ export default function LeavePolicies() {
       <p className="mt-3 text-xs text-amber-700">Note: This screen stores policy rules. Automatic monthly/periodic balance credit is not enabled by this configuration alone yet.</p>
     </form>
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"><div className="border-b px-5 py-4 font-semibold">Configured Policies</div>
-      {loading ? <div className="p-8 text-center text-sm text-gray-500">Loading...</div> : policies.length === 0 ? <div className="p-8 text-center text-sm text-gray-500">No leave policies configured yet.</div> : <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead className="bg-gray-50"><tr>{["Leave Type","Eligibility","Accrual","Amount / Cycle","Annual Entitlement","Carry Forward","Status","Actions"].map(h=><th key={h} className="px-4 py-3 text-left">{h}</th>)}</tr></thead><tbody className="divide-y">{policies.map(p=><tr key={p._id}><td className="px-4 py-3 font-medium">{p.leaveTypeId?.name || "-"}</td><td className="px-4 py-3">{p.eligibility?.applyToAll !== false ? "All employees" : [...(p.eligibility?.roles || []).map(x => x.roleCode || x.roleName), ...(p.eligibility?.designations || []).map(x => x.designation), ...(p.eligibility?.users || []).map(x => x.name)].join(", ") || "No assignment"}</td><td className="px-4 py-3">{(p.accrualFrequency || "none").replace("_"," ")}</td><td className="px-4 py-3">{p.accrualAmount}</td><td className="px-4 py-3">{p.annualEntitlement}</td><td className="px-4 py-3">{p.carryForwardAllowed ? `Yes (max ${p.maxCarryForward})` : "No"}</td><td className="px-4 py-3">{p.isActive ? "Active" : "Inactive"}</td><td className="px-4 py-3"><div className="flex gap-3"><button onClick={()=>edit(p)} className="font-semibold text-indigo-600">Edit</button>{p.isActive && <button onClick={()=>deactivate(p)} className="font-semibold text-red-600">Deactivate</button>}</div></td></tr>)}</tbody></table></div>}
+      {loading ? <div className="p-8 text-center text-sm text-gray-500">Loading...</div> : policies.length === 0 ? <div className="p-8 text-center text-sm text-gray-500">No leave policies configured yet.</div> : <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead className="bg-gray-50"><tr>{["Leave Type","Eligibility","Accrual","Amount / Cycle","Annual Entitlement","Carry Forward","Status","Actions"].map(h=><th key={h} className="px-4 py-3 text-left">{h}</th>)}</tr></thead><tbody className="divide-y">{policies.map(p=><tr key={p._id}><td className="px-4 py-3 font-medium">{p.leaveTypeId?.name || "-"}</td><td className="px-4 py-3">{p.eligibility?.applyToAll !== false ? "All employees" : [...(p.eligibility?.designations || []).map(x => x.designation), ...(p.eligibility?.users || []).map(x => x.name)].join(", ") || "No assignment"}</td><td className="px-4 py-3">{(p.accrualFrequency || "none").replace("_"," ")}</td><td className="px-4 py-3">{p.accrualAmount}</td><td className="px-4 py-3">{p.annualEntitlement}</td><td className="px-4 py-3">{p.carryForwardAllowed ? `Yes (max ${p.maxCarryForward})` : "No"}</td><td className="px-4 py-3">{p.isActive ? "Active" : "Inactive"}</td><td className="px-4 py-3"><div className="flex gap-3"><button onClick={()=>edit(p)} className="font-semibold text-indigo-600">Edit</button>{p.isActive && <button onClick={()=>deactivate(p)} className="font-semibold text-red-600">Deactivate</button>}</div></td></tr>)}</tbody></table></div>}
     </div>
   </div></div>;
 }

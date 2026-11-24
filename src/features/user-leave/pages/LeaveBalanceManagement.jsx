@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Select from "react-select";
 import {
   bulkImportLeaveBalances,
   configureLeaveBalance,
@@ -61,7 +62,7 @@ export default function LeaveBalanceManagement() {
   const [success, setSuccess] = useState("");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkYear, setBulkYear] = useState(currentYear);
-  const [bulkType, setBulkType] = useState("");
+  const [bulkType, setBulkType] = useState([]);
   const [bulkRows, setBulkRows] = useState([]);
   const [bulkFileName, setBulkFileName] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -153,16 +154,17 @@ export default function LeaveBalanceManagement() {
   };
 
   const templateRows = useMemo(() => {
-    const headers = ["userId", "name", "contact", "email", "designation", "leaveYear", ...numericFields, "openingBalanceExpiryDate"];
-    const data = rows.map((employee) => [
+    const headers = ["userId", "name", "contact", "email", "designation", "Leave Type", "leaveYear", ...numericFields, "openingBalanceExpiryDate"];
+    const selectedTypes = Array.isArray(bulkType) ? bulkType : [];
+    const data = rows.flatMap((employee) => selectedTypes.map((type) => [
       employee._id, employee.name || "", employee.contact || "", employee.email || "",
-      employee.designation?.designation || "", bulkYear, "", "", "", "", "", "",
-    ]);
+      employee.designation?.designation || "", type.code || type.label || "", bulkYear, "", "", "", "", "", "",
+    ]));
     return [headers, ...data];
-  }, [rows, bulkYear]);
+  }, [rows, bulkYear, bulkType]);
 
   const handleTemplateDownload = () => {
-    if (!bulkType) { setError("Select Leave Type before downloading the template."); return; }
+    if (!bulkType.length) { setError("Select at least one Leave Type before downloading the template."); return; }
     downloadCsv(`leave-balance-template-${bulkYear}.csv`, templateRows);
   };
 
@@ -181,17 +183,25 @@ export default function LeaveBalanceManagement() {
   };
 
   const handleBulkSubmit = async () => {
-    if (!bulkType) { setError("Select Leave Type."); return; }
+    if (!bulkType.length) { setError("Select at least one Leave Type."); return; }
     if (!bulkRows.length) { setError("Download the template, fill it and upload the CSV file."); return; }
     try {
       setBulkSaving(true); setError(""); setSuccess("");
-      const payloadRows = bulkRows.map((row) => ({
-        userId: String(row.userId || "").trim(),
-        leaveYear: Number(row.leaveYear || bulkYear),
-        ...Object.fromEntries(numericFields.map((field) => [field, num(row[field])])),
-        openingBalanceExpiryDate: row.openingBalanceExpiryDate || null,
-      }));
-      const response = await bulkImportLeaveBalances({ leaveTypeId: bulkType, rows: payloadRows });
+      const selectedCodes = bulkType.flatMap((type) => [type.code, type.name].filter(Boolean).map((value) => String(value).trim().toUpperCase()));
+      const payloadRows = bulkRows.map((row) => {
+        const rowType = String(row["Leave Type"] || row.leaveType || row.leaveTypeCode || "").trim();
+        const resolvedType = rowType || (bulkType.length === 1 ? selectedCodes[0] : "");
+        if (!resolvedType) throw new Error(`Leave Type is required for employee ${row.name || row.userId || ""}. Please use the Leave Type column in the CSV.`);
+        if (!selectedCodes.includes(resolvedType.toUpperCase())) throw new Error(`Leave Type "${resolvedType}" for ${row.name || row.userId || ""} was not selected in the bulk upload.`);
+        return {
+          userId: String(row.userId || "").trim(),
+          leaveType: resolvedType,
+          leaveYear: Number(row.leaveYear || bulkYear),
+          ...Object.fromEntries(numericFields.map((field) => [field, num(row[field])])),
+          openingBalanceExpiryDate: row.openingBalanceExpiryDate || null,
+        };
+      });
+      const response = await bulkImportLeaveBalances({ rows: payloadRows });
       const result = response?.data || {};
       setSuccess(`${response?.message || "Bulk upload completed."} Created: ${result.createdCount || 0}, Updated: ${result.updatedCount || 0}, Failed: ${result.failedCount || 0}.`);
       if (result.errors?.length) setError(result.errors.slice(0, 8).map((item) => `Row ${item.row}: ${item.message}`).join(" | "));
@@ -213,7 +223,7 @@ export default function LeaveBalanceManagement() {
             <h1 className="text-2xl font-bold text-gray-900">Leave Balance Management</h1>
             <p className="mt-1 text-sm text-gray-500">Filter employees and manage year-wise, leave-type-wise balances.</p>
           </div>
-          <button type="button" onClick={() => { setBulkYear(submittedFilters.leaveYear || currentYear); setBulkType(submittedFilters.leaveTypeId || ""); setBulkOpen(true); }} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700">Bulk Upload</button>
+          <button type="button" onClick={() => { setBulkYear(submittedFilters.leaveYear || currentYear); setBulkType(submittedFilters.leaveTypeId ? leaveTypes.filter((type) => type._id === submittedFilters.leaveTypeId).map((type) => ({ value: type._id, label: `${type.name} (${type.code})`, code: type.code, name: type.name })) : []); setBulkOpen(true); }} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700">Bulk Upload</button>
         </div>
 
         {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
@@ -273,13 +283,13 @@ export default function LeaveBalanceManagement() {
 
         {bulkOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-3"><div><h2 className="text-xl font-bold text-gray-900">Bulk Upload Leave Balances</h2><p className="mt-1 text-sm text-gray-500">Select leave year and type, download the employee template, fill it and upload CSV.</p></div><button type="button" onClick={() => setBulkOpen(false)} className="rounded-lg px-3 py-1 text-xl text-gray-500 hover:bg-gray-100">×</button></div>
+            <div className="flex items-start justify-between gap-3"><div><h2 className="text-xl font-bold text-gray-900">Bulk Upload Leave Balances</h2><p className="mt-1 text-sm text-gray-500">Select leave year and one or more leave types. The template repeats each employee row for every selected leave type.</p></div><button type="button" onClick={() => setBulkOpen(false)} className="rounded-lg px-3 py-1 text-xl text-gray-500 hover:bg-gray-100">×</button></div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium text-gray-700">Leave Year<input type="number" min="2000" max="3000" value={bulkYear} onChange={(e) => setBulkYear(Number(e.target.value))} className="mt-2 w-full rounded-xl border border-gray-300 px-3 py-3" /></label>
-              <label className="text-sm font-medium text-gray-700">Leave Type<select value={bulkType} onChange={(e) => setBulkType(e.target.value)} className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-3"><option value="">Select Leave Type</option>{leaveTypes.map((type) => <option key={type._id} value={type._id}>{type.name} ({type.code})</option>)}</select></label>
+              <div className="text-sm font-medium text-gray-700">Leave Type<Select isMulti options={leaveTypes.map((type) => ({ value: type._id, label: `${type.name} (${type.code})`, code: type.code, name: type.name }))} value={bulkType} onChange={(selected) => setBulkType(selected || [])} placeholder="Select one or more leave types..." className="mt-2 text-sm" classNamePrefix="leave-type-select" closeMenuOnSelect={false} /></div>
             </div>
-            <div className="mt-5 rounded-xl border border-dashed border-indigo-300 bg-indigo-50 p-4"><p className="text-sm font-semibold text-indigo-900">Template columns</p><p className="mt-1 text-xs text-indigo-800">userId (_id), name, contact, email, designation, leaveYear, openingBalance, accruedBalance, carryForwardBalance, adjustmentBalance, expiredBalance, openingBalanceExpiryDate.</p><div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={handleTemplateDownload} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Download Template CSV</button><label className="cursor-pointer rounded-lg border border-indigo-300 bg-white px-4 py-2 text-sm font-semibold text-indigo-700">Choose CSV File<input type="file" accept=".csv,text/csv" onChange={handleBulkFile} className="hidden" /></label></div>{bulkFileName && <p className="mt-2 text-xs text-gray-600">Selected: {bulkFileName} · {bulkRows.length} row(s)</p>}</div>
-            <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setBulkOpen(false)} className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button><button type="button" disabled={bulkSaving || !bulkRows.length} onClick={handleBulkSubmit} className="rounded-xl bg-green-600 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{bulkSaving ? "Uploading..." : "Upload & Update"}</button></div>
+            <div className="mt-5 rounded-xl border border-dashed border-indigo-300 bg-indigo-50 p-4"><p className="text-sm font-semibold text-indigo-900">Template columns</p><p className="mt-1 text-xs text-indigo-800">userId (_id), name, contact, email, designation, leaveType, leaveYear, openingBalance, accruedBalance, carryForwardBalance, adjustmentBalance, expiredBalance, openingBalanceExpiryDate. Each employee appears once per selected leave type; fill the balance columns for each row.</p><div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={handleTemplateDownload} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Download Template CSV</button><label className="cursor-pointer rounded-lg border border-indigo-300 bg-white px-4 py-2 text-sm font-semibold text-indigo-700">Choose CSV File<input type="file" accept=".csv,text/csv" onChange={handleBulkFile} className="hidden" /></label></div>{bulkFileName && <p className="mt-2 text-xs text-gray-600">Selected: {bulkFileName} · {bulkRows.length} row(s)</p>}</div>
+            <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setBulkOpen(false)} className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button><button type="button" disabled={bulkSaving || !bulkRows.length || !bulkType.length} onClick={handleBulkSubmit} className="rounded-xl bg-green-600 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{bulkSaving ? "Uploading..." : "Upload & Update"}</button></div>
           </div>
         </div>}
       </div>
