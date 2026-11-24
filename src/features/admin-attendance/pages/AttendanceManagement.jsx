@@ -1,4 +1,5 @@
 import SearchableSelect from "../../../components/common/SearchableSelect";
+import Select from "react-select";
 import {
   useEffect,
   useMemo,
@@ -18,6 +19,10 @@ import {
   getUserDesignations,
   getUserRegionAccess,
   getAttendance,
+  getAttendanceHolidayOverlay,
+  getAttendanceLeaveOptions,
+  markAttendanceLeave,
+  removeAdminMarkedLeaveAttendance,
   markUserAttendance,
   updateUserAttendance,
 } from "../services/adminAttendance.service";
@@ -90,6 +95,19 @@ const formatDate = (date) => {
   );
 };
 
+
+const getAttendanceStatusLabel = (record) => {
+  if (record?.status !== "Leave") return record?.status || (record?.__missing ? "Absent" : "-");
+  const leaveType = record?.leaveId?.leaveTypeId;
+  const code = typeof leaveType === "object"
+    ? (leaveType?.code || leaveType?.name)
+    : (record?.leaveTypeCode || record?.leaveTypeName);
+  return code ? `Leave (${code})` : "Leave";
+};
+
+const isAdminMarkedLeave = (record) =>
+  record?.attendanceSource === "Leave" &&
+  String(record?.leaveId?.approvalReason || "").includes("Directly marked by an authorized attendance user.");
 
 const getStatusClass = (
   status
@@ -431,27 +449,27 @@ function AttendanceManagement() {
 
 
   const [selectedRole, setSelectedRole] =
-    useState("");
+    useState([]);
 
 
   const [selectedDepartment, setSelectedDepartment] =
-    useState("");
+    useState([]);
 
 
   const [selectedDistrict, setSelectedDistrict] =
-    useState("");
+    useState([]);
 
 
   const [attendanceType, setAttendanceType] =
-    useState("");
+    useState([]);
 
 
   const [status, setStatus] =
-    useState("");
+    useState([]);
 
 
   const [attendanceSource, setAttendanceSource] =
-    useState("");
+    useState([]);
 
 
   // ==========================================================
@@ -469,6 +487,9 @@ function AttendanceManagement() {
   const [selectedModalUser, setSelectedModalUser] =
     useState(null);
 
+  const [attendanceLeaveOptions, setAttendanceLeaveOptions] = useState([]);
+  const [loadingLeaveOptions, setLoadingLeaveOptions] = useState(false);
+
 
   // ==========================================================
   // FORM
@@ -484,6 +505,8 @@ function AttendanceManagement() {
 
       status:
         "Present",
+
+      leaveTypeId: "",
 
       date:
         getToday(),
@@ -522,6 +545,35 @@ function AttendanceManagement() {
   const [success, setSuccess] =
     useState("");
 
+
+  // Fetch the selected employee's available leave buckets for the
+  // year of the date currently selected in the Mark Attendance modal.
+  useEffect(() => {
+    if (!isModalOpen || !selectedModalUser?._id) {
+      setAttendanceLeaveOptions([]);
+      return;
+    }
+    let active = true;
+    setLoadingLeaveOptions(true);
+    getAttendanceLeaveOptions(
+      selectedModalUser._id,
+      Number(String(form.date || "").slice(0, 4)) || new Date().getFullYear(),
+      editingId || ""
+    )
+      .then((options) => {
+        if (active) setAttendanceLeaveOptions(Array.isArray(options) ? options : []);
+      })
+      .catch((error) => {
+        if (active) {
+          setAttendanceLeaveOptions([]);
+          setError(error?.response?.data?.message || "Unable to load employee leave balances.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingLeaveOptions(false);
+      });
+    return () => { active = false; };
+  }, [isModalOpen, selectedModalUser?._id, form.date, editingId]);
 
   // ==========================================================
   // LOAD MASTER DATA
@@ -1037,78 +1089,21 @@ function AttendanceManagement() {
           // ROLE
           // --------------------------------------------------
 
-          if (
-            selectedRole
-          ) {
-
-            const hasRole =
-              meta?.roles?.some(
-                (role) =>
-                  getId(
-                    role
-                  ) ===
-                  String(
-                    selectedRole
-                  )
-              );
-
-
-            if (!hasRole) {
-              return false;
-            }
-          }
+          if (selectedRole.length && !meta?.roles?.some((role) => selectedRole.includes(getId(role)))) return false;
 
 
           // --------------------------------------------------
           // DEPARTMENT
           // --------------------------------------------------
 
-          if (
-            selectedDepartment
-          ) {
-
-            const hasDepartment =
-              meta?.departmentIds?.some(
-                (departmentId) =>
-                  String(
-                    departmentId
-                  ) ===
-                  String(
-                    selectedDepartment
-                  )
-              );
-
-
-            if (!hasDepartment) {
-              return false;
-            }
-          }
+          if (selectedDepartment.length && !meta?.departmentIds?.some((id) => selectedDepartment.includes(String(id)))) return false;
 
 
           // --------------------------------------------------
           // DISTRICT
           // --------------------------------------------------
 
-          if (
-            selectedDistrict
-          ) {
-
-            const hasDistrict =
-              meta?.districts?.some(
-                (district) =>
-                  String(
-                    district?.id
-                  ) ===
-                  String(
-                    selectedDistrict
-                  )
-              );
-
-
-            if (!hasDistrict) {
-              return false;
-            }
-          }
+          if (selectedDistrict.length && !meta?.districts?.some((district) => selectedDistrict.includes(String(district?.id)))) return false;
 
 
           return true;
@@ -1142,16 +1137,10 @@ function AttendanceManagement() {
         setError("");
 
 
-        const response =
-          await getAttendance({
-
-            fromDate,
-            toDate,
-
-            // Fetch all records in the selected date range so missing
-            // attendance documents can be counted as absent accurately.
-
-          });
+        const [response, holidayRows] = await Promise.all([
+          getAttendance({ fromDate, toDate }),
+          getAttendanceHolidayOverlay({ fromDate, toDate }),
+        ]);
 
 
         console.log(
@@ -1221,9 +1210,17 @@ function AttendanceManagement() {
         );
 
 
-        setAttendance(
-          attendanceData
+        const realAttendanceKeys = new Set(attendanceData
+          .filter(record => ["Present", "WFH"].includes(record.status))
+          .map(record => `${getId(record.userId)}::${String(record.date || "").slice(0, 10)}`));
+        const visibleHolidayRows = (holidayRows || []).filter(row =>
+          !realAttendanceKeys.has(`${getId(row.userId)}::${String(row.date || "").slice(0, 10)}`)
         );
+
+        setAttendance([
+          ...attendanceData,
+          ...visibleHolidayRows,
+        ]);
 
       } catch (err) {
 
@@ -1271,9 +1268,6 @@ function AttendanceManagement() {
   }, [
     fromDate,
     toDate,
-    attendanceType,
-    status,
-    attendanceSource,
     loading,
   ]);
 
@@ -1341,11 +1335,7 @@ function AttendanceManagement() {
   // ==========================================================
 
   const attendanceFilterApplied =
-    Boolean(
-      attendanceType ||
-      status ||
-      attendanceSource
-    );
+    Boolean(attendanceType.length || status.length || attendanceSource.length);
 
 
   // ==========================================================
@@ -1392,16 +1382,19 @@ function AttendanceManagement() {
       return filteredUsers.filter((user) =>
         attendance.some((record) => {
           if (getId(record.userId) !== String(user._id)) return false;
-          if (status && record.status !== status) return false;
-          if (attendanceType && record.attendanceType !== attendanceType) return false;
-          if (attendanceSource && record.attendanceSource !== attendanceSource) return false;
+          if (status.length && !status.includes(record.status)) return false;
+          if (attendanceType.length && !attendanceType.includes(record.attendanceType)) return false;
+          if (attendanceSource.length && !attendanceSource.includes(record.attendanceSource)) return false;
           return true;
         })
       );
 
     }, [
       filteredUsers,
-      attendanceMap,
+      attendance,
+      status,
+      attendanceType,
+      attendanceSource,
       attendanceFilterApplied,
     ]);
 
@@ -1501,13 +1494,15 @@ function AttendanceManagement() {
     let absent = 0;
     let wfh = 0;
     let leaves = 0;
+    let holidays = 0;
 
-    // A working day without any UserAttendance document is counted as Absent.
-    // Sundays are excluded from Total Days and all attendance totals.
+    // A working day without attendance is Absent, except configured holidays.
+    // Holidays and Sundays are excluded from the working-day denominator.
     workingDates.forEach(({ key }) => {
       const dayRecords = recordsByDate.get(key) || [];
       const statuses = dayRecords.map((record) => record.status);
-      if (statuses.includes("Present")) present += 1;
+      if (statuses.includes("Holiday")) holidays += 1;
+      else if (statuses.includes("Present")) present += 1;
       else if (statuses.includes("WFH")) wfh += 1;
       else if (statuses.includes("Leave")) leaves += 1;
       else absent += 1;
@@ -1516,11 +1511,12 @@ function AttendanceManagement() {
     return {
       ...item,
       records,
-      totalDays: workingDates.length,
+      totalDays: Math.max(0, workingDates.length - holidays),
       present,
       absent,
       wfh,
       leaves,
+      holidays,
       sundays: selectedDates.length - workingDates.length,
       recordsByDate,
     };
@@ -1539,7 +1535,7 @@ function AttendanceManagement() {
   }, [summaryRows, selectedDetailUser, selectedDates, fromDate, toDate]);
 
   const exportSummary = () => exportCsv(
-    ["Employee","Role","Designation","District","Attendance Type","Source","Total Days","Total Present","Total Absent","Total Sundays","WFH","Leaves"],
+    ["Employee","Role","Designation","District","Attendance Type","Source","Total Days","Total Present","Total Absent","Total Sundays","Holidays","WFH","Leaves"],
     summaryRows.map((r) => [
       r.user.name,
       r.roles.map(getRoleName).join(", "),
@@ -1547,7 +1543,7 @@ function AttendanceManagement() {
       r.districts.map((d) => d.name).join(", "),
       [...new Set(r.records.map((x) => x.attendanceType).filter(Boolean))].join(", "),
       [...new Set(r.records.map((x) => x.attendanceSource).filter(Boolean))].join(", "),
-      r.totalDays, r.present, r.absent, r.sundays, r.wfh, r.leaves,
+      r.totalDays, r.present, r.absent, r.sundays, r.holidays, r.wfh, r.leaves,
     ]),
     `attendance-summary-${fromDate}-to-${toDate}.csv`
   );
@@ -1633,7 +1629,7 @@ function AttendanceManagement() {
     const detailHeaders = ["_id", "Employee Name", "Email", "userId", "Contact", "Role", "Designation", "Department", "Access Scope", "District", "Block", "Center", "Date", "Attendance", "Type", "Source", "Check In", "Check Out", "Location"];
     const matrixHeaders = ["_id", "Employee Name", "Email", "userId", "Contact", "Role", "Designation", "Department", "Access Scope", "District", "Block", "Center", ...selectedDates.map(({ key, isSunday }) => ({ value: dateLabel(key, isSunday), mergeAcross: 1 }))];
     const matrixSubHeader = [...Array(12).fill(""), ...selectedDates.flatMap(() => ["Check In", "Check Out"])];
-    const presentSummaryRows = [[...detailHeaders.slice(0, 12), ...selectedDates.map(({ key, isSunday }) => dateLabel(key, isSunday)), "Total Present", "Total Absent", "Total Sundays", "Total Days"]];
+    const presentSummaryRows = [[...detailHeaders.slice(0, 12), ...selectedDates.map(({ key, isSunday }) => dateLabel(key, isSunday)), "Total Present", "Total Absent", "Total Sundays", "Total Holidays", "Total Days"]];
     const lateRows = [[...detailHeaders.slice(0, 12), "Date", "Attendance", "Check In", "Check Out", "Location", "Late Coming (Minutes)", "Early Departure (Minutes)", "Total Working Hours"]];
     const minutesOf = (value) => {
       if (!value) return null;
@@ -1654,9 +1650,9 @@ function AttendanceManagement() {
       selectedDates.forEach(({ key, isSunday }) => {
         const records = row.recordsByDate.get(key) || [];
         const record = records[0] || null;
-        const status = isSunday ? "Sunday" : (records.some((r) => ["Present", "WFH"].includes(r.status)) ? "P" : "A");
+        const status = isSunday ? "Sunday" : (records.some((r) => r.status === "Holiday") ? "H" : (records.some((r) => ["Present", "WFH"].includes(r.status)) ? "P" : "A"));
         dayStatuses.push(status);
-        if (records.length) records.forEach((r) => detailedRows.push([...identity, key.split("-").reverse().join("-"), r.status || "", r.attendanceType || "", r.attendanceSource || "", formatClock(r.checkIn), formatClock(r.checkOut), r.visitedLocation || ""]));
+        if (records.length) records.forEach((r) => detailedRows.push([...identity, key.split("-").reverse().join("-"), getAttendanceStatusLabel(r), r.attendanceType || "", r.attendanceSource || "", formatClock(r.checkIn), formatClock(r.checkOut), r.visitedLocation || ""]));
         else detailedRows.push([...identity, key.split("-").reverse().join("-"), isSunday ? "Sunday" : "Absent", "", "", "", "", ""]);
         const checkInMin = minutesOf(record?.checkIn);
           const checkOutMin = minutesOf(record?.checkOut);
@@ -1667,7 +1663,7 @@ function AttendanceManagement() {
           const duration = isSunday ? null : (configuredMinutes != null && checkInMin != null && checkOutMin != null
             ? Math.max(0, configuredMinutes - (late || 0) - (early || 0))
             : actualDuration);
-        lateRows.push([...identity, key.split("-").reverse().join("-"), isSunday ? "Sunday" : (record?.status || "Absent"), formatClock(record?.checkIn), formatClock(record?.checkOut), record?.visitedLocation || "", isSunday ? "" : diffText(late), isSunday ? "" : diffText(early), formatHours(duration)]);
+        lateRows.push([...identity, key.split("-").reverse().join("-"), isSunday ? "Sunday" : (getAttendanceStatusLabel(record) || "Absent"), formatClock(record?.checkIn), formatClock(record?.checkOut), record?.visitedLocation || "", isSunday ? "" : diffText(late), isSunday ? "" : diffText(early), formatHours(duration)]);
       });
       const matrixValues = selectedDates.flatMap(({ key }) => {
         const records = row.recordsByDate.get(key) || [];
@@ -1677,7 +1673,8 @@ function AttendanceManagement() {
       const totalPresent = dayStatuses.filter((x) => x === "P").length;
       const totalSundays = dayStatuses.filter((x) => x === "Sunday").length;
       const totalAbsent = dayStatuses.filter((x) => x === "A").length;
-      presentSummaryRows.push([...identity, ...dayStatuses, totalPresent, totalAbsent, totalSundays, selectedDates.length]);
+      const totalHolidays = dayStatuses.filter((x) => x === "H").length;
+      presentSummaryRows.push([...identity, ...dayStatuses, totalPresent, totalAbsent, totalSundays, totalHolidays, selectedDates.length]);
     });
     const firstSheetRows = [[...detailHeaders].map((value) => ({ value, header: true })), ...detailedRows];
     const presentRows = presentSummaryRows.map((row, index) => index === 0 ? row.map((value) => ({ value, header: true })) : row);
@@ -1691,8 +1688,8 @@ function AttendanceManagement() {
   };
 
   const exportEmployeeTotals = () => exportCsv(
-    ["Employee Name","Email","Total Days","Total Present","Total Absent","Total Sundays","WFH","Leaves"],
-    summaryRows.map((r) => [r.user.name,r.user.email,r.totalDays,r.present,r.absent,r.sundays,r.wfh,r.leaves]),
+    ["Employee Name","Email","Total Days","Total Present","Total Absent","Total Sundays","Holidays","WFH","Leaves"],
+    summaryRows.map((r) => [r.user.name,r.user.email,r.totalDays,r.present,r.absent,r.sundays,r.holidays,r.wfh,r.leaves]),
     `employee-attendance-totals-${fromDate}-to-${toDate}.csv`
   );
 
@@ -1789,12 +1786,9 @@ function AttendanceManagement() {
 
       setForm(
         (previous) => ({
-
           ...previous,
-
-          [name]:
-            value,
-
+          [name]: value,
+          ...(name === "status" && value !== "Leave" ? { leaveTypeId: "" } : {}),
         })
       );
 
@@ -1897,6 +1891,8 @@ function AttendanceManagement() {
         status:
           "Present",
 
+        leaveTypeId: "",
+
         date: attendanceDate || (fromDate === toDate ? fromDate : getToday()),
 
         visitedLocation:
@@ -1926,19 +1922,6 @@ function AttendanceManagement() {
 
   const openEditModal =
     (record) => {
-
-      if (
-        record?.attendanceSource ===
-        "Leave"
-      ) {
-
-        setError(
-          "Leave attendance cannot be manually edited."
-        );
-
-        return;
-      }
-
 
       setError(
         ""
@@ -1995,6 +1978,8 @@ function AttendanceManagement() {
         status:
           record.status ||
           "Present",
+
+        leaveTypeId: record?.leaveId?.leaveTypeId?._id || record?.leaveId?.leaveTypeId || "",
 
         date:
           record.date
@@ -2070,6 +2055,8 @@ function AttendanceManagement() {
         status:
           "Present",
 
+        leaveTypeId: "",
+
         date: fromDate === toDate ? fromDate : getToday(),
 
         visitedLocation:
@@ -2124,6 +2111,7 @@ function AttendanceManagement() {
 
       if (
         requiresLocation &&
+        form.status !== "Leave" &&
         !form.visitedLocation.trim()
       ) {
 
@@ -2165,50 +2153,62 @@ function AttendanceManagement() {
         // UPDATE
         // ----------------------------------------------------
 
-        if (
+        if (editingId && form.status === "Leave") {
+          if (!form.leaveTypeId) {
+            setError("Please select a leave type from the employee's available leave balance.");
+            setSubmitting(false);
+            return;
+          }
+          await markAttendanceLeave({
+            userId: form.userId,
+            leaveTypeId: form.leaveTypeId,
+            date: form.date,
+            replaceAttendanceId: editingId,
+            remarks: form.remarks.trim(),
+            reason: form.manualAttendanceReason.trim() || "Leave marked by HR/Admin from Attendance Management",
+          });
+          setSuccess("Attendance converted to approved leave and employee leave balance adjusted.");
+        }
+
+        else if (
           editingId
         ) {
 
           await updateUserAttendance(
             editingId,
             {
-
-              attendanceType:
-                form.attendanceType,
-
-              status:
-                form.status,
-
-              date:
-                form.date,
+              attendanceType: form.attendanceType,
+              status: form.status,
+              date: form.date,
               checkIn: checkInTimestamp,
               checkOut: checkOutTimestamp,
-
-              visitedLocation:
-                requiresLocation
-                  ? form.visitedLocation.trim()
-                  : null,
-
-              manualAttendanceReason:
-                form.manualAttendanceReason.trim(),
-
-              remarks:
-                form.remarks.trim(),
-
+              visitedLocation: requiresLocation ? form.visitedLocation.trim() : null,
+              manualAttendanceReason: form.manualAttendanceReason.trim(),
+              remarks: form.remarks.trim(),
             }
           );
-
-
-          setSuccess(
-            "Attendance updated successfully."
-          );
-
+          setSuccess("Attendance updated successfully.");
         }
-
 
         // ----------------------------------------------------
         // CREATE
         // ----------------------------------------------------
+
+        else if (form.status === "Leave") {
+          if (!form.leaveTypeId) {
+            setError("Please select a leave type from the employee's available leave balance.");
+            setSubmitting(false);
+            return;
+          }
+          await markAttendanceLeave({
+            userId: form.userId,
+            leaveTypeId: form.leaveTypeId,
+            date: form.date,
+            remarks: form.remarks.trim(),
+            reason: form.manualAttendanceReason.trim() || "Leave marked by HR/Admin from Attendance Management",
+          });
+          setSuccess("Leave marked successfully and employee leave balance adjusted.");
+        }
 
         else {
 
@@ -2279,6 +2279,8 @@ function AttendanceManagement() {
           status:
             "Present",
 
+          leaveTypeId: "",
+
           date: fromDate === toDate ? fromDate : getToday(),
 
           visitedLocation:
@@ -2335,29 +2337,17 @@ function AttendanceManagement() {
       setFromDate(getMonthStart());
       setToDate(getToday());
       setSelectedDetailUser(null);
-      setSelectedRole(
-        ""
-      );
+      setSelectedRole([]);
 
-      setSelectedDepartment(
-        ""
-      );
+      setSelectedDepartment([]);
 
-      setSelectedDistrict(
-        ""
-      );
+      setSelectedDistrict([]);
 
-      setAttendanceType(
-        ""
-      );
+      setAttendanceType([]);
 
-      setStatus(
-        ""
-      );
+      setStatus([]);
 
-      setAttendanceSource(
-        ""
-      );
+      setAttendanceSource([]);
 
     };
 
@@ -2518,313 +2508,42 @@ function AttendanceManagement() {
             </div>
 
 
-            {/* ==================================================
-                ROLE
-            ================================================== */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Role
-              </label>
-
-
-              <SearchableSelect
-                value={
-                  selectedRole
-                }
-                onChange={(
-                  event
-                ) =>
-                  setSelectedRole(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              >
-
-                <option value="">
-                  All Roles
-                </option>
-
-
-                {roles.map(
-                  (role) => (
-
-                    <option
-                      key={
-                        role._id
-                      }
-                      value={
-                        role._id
-                      }
-                    >
-                      {getRoleName(
-                        role
-                      )}
-                    </option>
-
-                  )
-                )}
-
-              </SearchableSelect>
-
-            </div>
-
-
-            {/* ==================================================
-                DEPARTMENT
-            ================================================== */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Department
-              </label>
-
-
-              <SearchableSelect
-                value={
-                  selectedDepartment
-                }
-                onChange={(
-                  event
-                ) =>
-                  setSelectedDepartment(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              >
-
-                <option value="">
-                  All Departments
-                </option>
-
-
-                {departments.map(
-                  (department) => (
-
-                    <option
-                      key={
-                        department._id
-                      }
-                      value={
-                        department._id
-                      }
-                    >
-                      {getDepartmentName(
-                        department
-                      )}
-                    </option>
-
-                  )
-                )}
-
-              </SearchableSelect>
-
-            </div>
-
-
-            {/* ==================================================
-                DISTRICT
-            ================================================== */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                District
-              </label>
-
-
-              <SearchableSelect
-                value={
-                  selectedDistrict
-                }
-                onChange={(
-                  event
-                ) =>
-                  setSelectedDistrict(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              >
-
-                <option value="">
-                  All Districts
-                </option>
-
-
-                {districts.map(
-                  (district) => (
-
-                    <option
-                      key={
-                        district.id
-                      }
-                      value={
-                        district.id
-                      }
-                    >
-                      {district.name}
-                    </option>
-
-                  )
-                )}
-
-              </SearchableSelect>
-
-            </div>
-
-
-            {/* ==================================================
-                ATTENDANCE TYPE
-            ================================================== */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Attendance Type
-              </label>
-
-
-              <SearchableSelect
-                value={
-                  attendanceType
-                }
-                onChange={(
-                  event
-                ) =>
-                  setAttendanceType(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              >
-
-                <option value="">
-                  All Types
-                </option>
-
-
-                {ATTENDANCE_TYPES.map(
-                  (type) => (
-
-                    <option
-                      key={
-                        type
-                      }
-                      value={
-                        type
-                      }
-                    >
-                      {type}
-                    </option>
-
-                  )
-                )}
-
-              </SearchableSelect>
-
-            </div>
-
-
-            {/* ==================================================
-                STATUS
-            ================================================== */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Status
-              </label>
-
-
-              <SearchableSelect
-                value={
-                  status
-                }
-                onChange={(
-                  event
-                ) =>
-                  setStatus(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              >
-
-                <option value="">
-                  All Status
-                </option>
-
-                <option value="Present">
-                  Present
-                </option>
-
-                <option value="WFH">
-                  WFH
-                </option>
-
-                <option value="Absent">
-                  Absent
-                </option>
-
-                <option value="Leave">
-                  Leave
-                </option>
-
-              </SearchableSelect>
-
-            </div>
-
-
-            {/* ==================================================
-                SOURCE
-            ================================================== */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Source
-              </label>
-
-
-              <SearchableSelect
-                value={
-                  attendanceSource
-                }
-                onChange={(
-                  event
-                ) =>
-                  setAttendanceSource(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              >
-
-                <option value="">
-                  All Sources
-                </option>
-
-                <option value="Manual">
-                  Manual
-                </option>
-
-                <option value="Leave">
-                  Leave
-                </option>
-
-                <option value="System">
-                  System
-                </option>
-
-              </SearchableSelect>
-
-            </div>
-
+            {[
+              { label: "Role", value: selectedRole, onChange: (items) => setSelectedRole((items || []).map((item) => item.value)), options: roles.map((item) => ({ value: getId(item), label: getRoleName(item) })), placeholder: "All Roles" },
+              { label: "Department", value: selectedDepartment, onChange: (items) => setSelectedDepartment((items || []).map((item) => item.value)), options: departments.map((item) => ({ value: getId(item), label: getDepartmentName(item) })), placeholder: "All Departments" },
+              { label: "District", value: selectedDistrict, onChange: (items) => setSelectedDistrict((items || []).map((item) => item.value)), options: districts.map((item) => ({ value: item.id, label: item.name })), placeholder: "All Districts" },
+              { label: "Attendance Type", value: attendanceType, onChange: (items) => setAttendanceType((items || []).map((item) => item.value)), options: ATTENDANCE_TYPES.map((item) => ({ value: item, label: item })), placeholder: "All Types" },
+              { label: "Status", value: status, onChange: (items) => setStatus((items || []).map((item) => item.value)), options: ["Present", "WFH", "Absent", "Leave", "Holiday"].map((item) => ({ value: item, label: item })), placeholder: "All Status" },
+              { label: "Source", value: attendanceSource, onChange: (items) => setAttendanceSource((items || []).map((item) => item.value)), options: [...new Set(["Manual", "Biometric", "Leave", "Holiday", ...attendance.map((record) => record.attendanceSource).filter(Boolean)])].map((item) => ({ value: item, label: item })), placeholder: "All Sources" },
+            ].map((filter) => (
+              <div key={filter.label}>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">{filter.label}</label>
+                <Select
+                  isMulti
+                  isClearable
+                  closeMenuOnSelect={false}
+                  hideSelectedOptions={false}
+                  options={filter.options}
+                  value={filter.options.filter((option) => filter.value.includes(option.value))}
+                  onChange={filter.onChange}
+                  placeholder={filter.placeholder}
+                  classNamePrefix="attendance-filter"
+                  menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                  styles={{
+                    control: (provided, state) => ({
+                      ...provided,
+                      minHeight: 48,
+                      borderRadius: 12,
+                      borderColor: state.isFocused ? "#6366f1" : "#d1d5db",
+                      boxShadow: state.isFocused ? "0 0 0 2px rgba(99,102,241,.12)" : "none",
+                      "&:hover": { borderColor: "#6366f1" },
+                    }),
+                    menuPortal: (provided) => ({ ...provided, zIndex: 9999 }),
+                    menu: (provided) => ({ ...provided, zIndex: 9999 }),
+                  }}
+                />
+              </div>
+            ))}
           </div>
 
         </div>
@@ -2917,19 +2636,11 @@ function AttendanceManagement() {
           <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
 
             <p className="text-xs font-medium text-gray-500">
-              {status === "Absent"
-                ? "Absent"
-                : status === "Leave"
-                ? "Leave"
-                : "Absent"}
+              {status.length === 1 && status[0] === "Leave" ? "Leave" : "Absent"}
             </p>
 
             <p className="mt-2 text-2xl font-bold text-red-600">
-              {status === "Absent"
-                ? summary.absent
-                : status === "Leave"
-                ? summary.leave
-                : summary.absent}
+              {status.length === 1 && status[0] === "Leave" ? summary.leave : summary.absent}
             </p>
 
           </div>
@@ -3020,27 +2731,29 @@ function AttendanceManagement() {
                     <button type="button" onClick={() => openMarkModal(selectedDetailUser)} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Mark Attendance</button>
                   </div>
                   <div className="overflow-x-auto"><table className="min-w-full text-sm">
-                    <thead className="bg-gray-50"><tr>{["Date","Check In","Check Out","Attendance Type","Source","Location","Action"].map((h) => <th key={h} className="px-4 py-3 text-left">{h}</th>)}</tr></thead>
+                    <thead className="bg-gray-50"><tr>{["Date","Status","Check In","Check Out","Attendance Type","Source","Location","Action"].map((h) => <th key={h} className="px-4 py-3 text-left">{h}</th>)}</tr></thead>
                     <tbody className="divide-y">
                       {detailRecords.map((record) => <tr key={record._id}>
-                        <td className="px-4 py-3">{formatDate(record.date)}</td><td className="px-4 py-3">{formatClock(record.checkIn)}</td><td className="px-4 py-3">{formatClock(record.checkOut)}</td>
+                        <td className="px-4 py-3">{formatDate(record.date)}</td>
+                        <td className="px-4 py-3"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(record.status)}`}>{getAttendanceStatusLabel(record)}</span></td>
+                        <td className="px-4 py-3">{formatClock(record.checkIn)}</td><td className="px-4 py-3">{formatClock(record.checkOut)}</td>
                         <td className="px-4 py-3">{record.attendanceType || "-"}</td><td className="px-4 py-3">{record.attendanceSource || "-"}</td><td className="px-4 py-3">{record.visitedLocation || "-"}</td>
-                        <td className="px-4 py-3">{record.__missing ? <button type="button" onClick={() => openMarkModal(selectedDetailUser, record.date)} className="font-semibold text-indigo-600">Mark</button> : record.attendanceSource === "Leave" ? <span className="text-xs text-gray-400">System</span> : <button type="button" onClick={() => openEditModal(record)} className="font-semibold text-indigo-600">Mark / Edit</button>}</td>
+                        <td className="px-4 py-3">{record.__missing ? <button type="button" onClick={() => openMarkModal(selectedDetailUser, record.date)} className="font-semibold text-indigo-600">Mark</button> : isAdminMarkedLeave(record) ? <div className="flex items-center gap-3"><button type="button" onClick={() => openEditModal(record)} className="font-semibold text-indigo-600">Mark / Edit</button><button type="button" onClick={async () => { if (!window.confirm("Remove this HR/Admin-marked leave and restore the employee's leave balance?")) return; try { await removeAdminMarkedLeaveAttendance(record._id); setSuccess("Leave removed and leave balance restored."); await fetchAttendance(); } catch (error) { setError(error?.response?.data?.message || "Unable to remove leave."); } }} className="font-semibold text-red-600">Delete</button></div> : record.attendanceSource === "Leave" ? <span className="text-xs text-gray-400">System</span> : <button type="button" onClick={() => openEditModal(record)} className="font-semibold text-indigo-600">Mark / Edit</button>}</td>
                       </tr>)}
-                      {!detailRecords.length && <tr><td colSpan="7" className="p-8 text-center text-gray-500">No attendance records in this date range.</td></tr>}
+                      {!detailRecords.length && <tr><td colSpan="8" className="p-8 text-center text-gray-500">No attendance records in this date range.</td></tr>}
                     </tbody>
                   </table></div>
                 </div>
               ) : (
                 <div className="overflow-x-auto"><table className="min-w-full text-sm">
-                  <thead className="bg-gray-50"><tr>{["Employee","Role","Designation","District","Attendance Type","Source","Total Present","Total Absent","Total Sundays","WFH","Leaves","Action"].map((h) => <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>)}</tr></thead>
+                  <thead className="bg-gray-50"><tr>{["Employee","Role","Designation","District","Attendance Type","Source","Total Present","Total Absent","Total Sundays","Holidays","WFH","Leaves","Action"].map((h) => <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>)}</tr></thead>
                   <tbody className="divide-y">
                     {summaryRows.map((row) => <tr key={row.user._id} className="hover:bg-gray-50">
                       <td className="px-4 py-3"><div className="font-semibold">{row.user.name}</div><div className="text-xs text-gray-500">{row.user.email}</div></td>
                       <td className="px-4 py-3">{row.roles.map(getRoleName).join(", ") || "-"}</td><td className="px-4 py-3">{row.designations.map(getDesignationName).join(", ") || "-"}</td>
                       <td className="px-4 py-3">{row.districts.map((d) => d.name).join(", ") || "-"}</td><td className="px-4 py-3">{[...new Set(row.records.map((r) => r.attendanceType).filter(Boolean))].join(", ") || "-"}</td>
                       <td className="px-4 py-3">{[...new Set(row.records.map((r) => r.attendanceSource).filter(Boolean))].join(", ") || "-"}</td>
-                      <td className="px-4 py-3 font-semibold text-green-700">{row.present}</td><td className="px-4 py-3 font-semibold text-red-700">{row.absent}</td><td className="px-4 py-3">{row.sundays}</td><td className="px-4 py-3">{row.wfh}</td><td className="px-4 py-3">{row.leaves}</td>
+                      <td className="px-4 py-3 font-semibold text-green-700">{row.present}</td><td className="px-4 py-3 font-semibold text-red-700">{row.absent}</td><td className="px-4 py-3">{row.sundays}</td><td className="px-4 py-3 text-blue-700">{row.holidays}</td><td className="px-4 py-3">{row.wfh}</td><td className="px-4 py-3">{row.leaves}</td>
                       <td className="px-4 py-3"><button type="button" onClick={() => setSelectedDetailUser(row.user)} className="rounded-lg bg-indigo-50 px-3 py-2 font-semibold text-indigo-700">Manage</button></td>
                     </tr>)}
                   </tbody>
@@ -3269,11 +2982,41 @@ function AttendanceManagement() {
                     Absent
                   </option>
 
+                  <option value="Leave">
+                    Leave
+                  </option>
+
                 </SearchableSelect>
 
               </div>
 
 
+              {form.status === "Leave" && (
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">Leave *</label>
+                  <select
+                    name="leaveTypeId"
+                    value={form.leaveTypeId || ""}
+                    onChange={(event) => setForm((previous) => ({ ...previous, leaveTypeId: event.target.value }))}
+                    required
+                    disabled={loadingLeaveOptions}
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">{loadingLeaveOptions ? "Loading leave balances..." : "Select available leave balance"}</option>
+                    {attendanceLeaveOptions.map((option) => (
+                      <option key={option.leaveTypeId} value={option.leaveTypeId}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {!loadingLeaveOptions && attendanceLeaveOptions.length === 0 && (
+                    <p className="mt-1 text-xs text-red-600">No available leave balance found for this employee and selected year.</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">One full day will be deducted from the selected leave balance.</p>
+                </div>
+              )}
+
+              {form.status !== "Leave" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="block text-sm font-semibold text-gray-700">Check In Time
                   <input type="time" name="checkIn" value={form.checkIn || ""} onChange={handleFormChange} className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"/>
@@ -3282,12 +3025,13 @@ function AttendanceManagement() {
                   <input type="time" name="checkOut" value={form.checkOut || ""} onChange={handleFormChange} className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"/>
                 </label>
               </div>
+              )}
 
               {/* =================================================
                   VISITED LOCATION
               ================================================= */}
 
-              {requiresLocation && (
+              {requiresLocation && form.status !== "Leave" && (
 
                 <div>
 
@@ -3322,7 +3066,7 @@ function AttendanceManagement() {
               <div>
 
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Manual Attendance Reason
+                  {form.status === "Leave" ? "Leave Reason" : "Manual Attendance Reason"}
                 </label>
 
 

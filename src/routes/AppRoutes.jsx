@@ -91,6 +91,8 @@ import LeavePolicies from "../features/user-leave/pages/LeavePolicies";
 import LeaveApprovalRules from "../features/user-leave/pages/LeaveApprovalRules";
 import LeaveBalanceManagement from "../features/user-leave/pages/LeaveBalanceManagement";
 import LeaveAccrualReport from "../features/user-leave/pages/LeaveAccrualReport";
+import HolidayCalendarManagement from "../features/holidays/pages/HolidayCalendarManagement";
+import MyHolidays from "../features/holidays/pages/MyHolidays";
 import LeaveDetails from "../features/user-leave/pages/LeaveDetails";
 import LeaveApprovalDetails from "../features/user-leave/pages/LeaveApprovalDetails";
 
@@ -539,6 +541,9 @@ function AppRoutes() {
 
             <Route path="/admin/employees" element={<PermissionGate permission="hr.employee.view"><Employees /></PermissionGate>} />
             <Route path="/admin/employees/:employeeId" element={<PermissionGate permission="hr.employee.view"><EmployeeProfile /></PermissionGate>} />
+
+            <Route path="/admin/holiday-calendar" element={<PermissionGate permission="holiday.calendar.manage"><HolidayCalendarManagement /></PermissionGate>} />
+            <Route path="/my-holidays" element={<MyHolidays />} />
 
             {/* =================================================
                 LEAVE ADMINISTRATION

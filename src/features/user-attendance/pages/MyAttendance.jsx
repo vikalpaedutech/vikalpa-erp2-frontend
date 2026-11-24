@@ -92,6 +92,16 @@ const getDateKey = (value) => {
 };
 
 
+
+const getAttendanceStatusLabel = (item) => {
+  if (item?.status !== "Leave") return item?.status || "-";
+  const leaveType = item?.leaveId?.leaveTypeId;
+  const code = typeof leaveType === "object"
+    ? (leaveType?.code || leaveType?.name)
+    : (item?.leaveTypeCode || item?.leaveTypeName);
+  return code ? `Leave (${code})` : "Leave";
+};
+
 const buildDailyAttendance = (records, startDate, endDate) => {
   const recordsByDate = new Map();
 
@@ -240,7 +250,7 @@ function MyAttendance() {
 
     const rows = filteredAttendance.map((item) => ({
       Date: formatDate(item.date),
-      Status: item.status || "",
+      Status: getAttendanceStatusLabel(item),
       "Check In": item.checkIn
         ? formatAttendanceTime(item.checkIn)
         : "",
@@ -419,6 +429,10 @@ function MyAttendance() {
                 <option value="Leave">
                   Leave
                 </option>
+
+                <option value="Holiday">
+                  Holiday
+                </option>
               </SearchableSelect>
             </div>
 
@@ -531,7 +545,7 @@ function MyAttendance() {
 <td className="px-5 py-4">
 
                           <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold">
-                            {item.status}
+                            {getAttendanceStatusLabel(item)}
                           </span>
 
                         </td>

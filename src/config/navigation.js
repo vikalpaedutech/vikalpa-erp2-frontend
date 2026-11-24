@@ -94,6 +94,8 @@ export const administrationItems = [
   { label: "Leave Accrual Report", path: "/admin/leave-accrual-report", permission: "leave.accrual-report.view", section: "HR MANAGEMENT", group: "Attendance Management" },
   { label: "Leave Approval Rules", path: "/admin/leave-approval-rules", permission: "leave.rule.manage", section: "HR MANAGEMENT", group: "Attendance Management" },
   { label: "Leave Balance Management", path: "/admin/leave-balances", permission: "leave.balance.manage", section: "HR MANAGEMENT", group: "Attendance Management" },
+  { label: "Holiday Calendar", path: "/admin/holiday-calendar", permission: "holiday.calendar.manage", section: "HR MANAGEMENT", group: "Holiday Management" },
+  { label: "My Holidays", path: "/my-holidays", section: "HR MANAGEMENT", group: "Holiday Management" },
 
   { label: "Gamification Eligible Roles", path: "/admin/gamification/roles", permission: "gamification.role.manage", section: "GAMIFICATION ADMINISTRATIONS", roles: ["admin"] },
   { label: "Gamification Dashboard", path: "/admin/gamification", permission: "gamification.manage", section: "GAMIFICATION ADMINISTRATIONS", roles: ["admin"] },

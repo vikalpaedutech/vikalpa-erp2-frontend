@@ -178,3 +178,43 @@ export const getAccessBasedAttendance = async (params = {}) => {
   return response.data;
 };
 
+
+// Fetch holiday calendar overlays for every active employee in the selected date range.
+export const getAttendanceHolidayOverlay = async ({ fromDate, toDate } = {}) => {
+  const response = await apiClient.get("/hrms/holidays/attendance-overlay", {
+    params: { fromDate, toDate },
+  });
+  return response.data?.data?.holidays || [];
+};
+
+
+/**
+ * Fetch the selected employee's active leave buckets for the attendance date year.
+ */
+export const getAttendanceLeaveOptions = async (userId, year, currentAttendanceId = "") => {
+  const response = await apiClient.get(
+    `/user-management/user-attendance/leave-options/${userId}`,
+    { params: { year, currentAttendanceId } }
+  );
+  return response.data?.data || [];
+};
+
+/**
+ * Mark a one-day approved leave directly from Admin Attendance.
+ * The backend creates the leave record, ledger deduction and attendance row atomically.
+ */
+export const markAttendanceLeave = async (payload) => {
+  const response = await apiClient.post(
+    "/user-management/user-attendance/mark-leave",
+    payload
+  );
+  return response.data;
+};
+
+/** Remove an HR/Admin-marked leave from attendance and restore its leave bucket. */
+export const removeAdminMarkedLeaveAttendance = async (attendanceId) => {
+  const response = await apiClient.delete(
+    `/user-management/user-attendance/${attendanceId}/admin-leave`
+  );
+  return response.data;
+};
