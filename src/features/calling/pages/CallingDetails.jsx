@@ -14,6 +14,64 @@ import {
 } from "../services/calling.service";
 
 
+// Creates an Excel-compatible SpreadsheetML .xls file without adding a dependency.
+const downloadFailedCallingRows = (errors = []) => {
+    const escapeXml = (value) => String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+
+    const rows = [
+        ["Row Number", "Field", "Validation Error"],
+        ...errors.map((message) => {
+            const text = String(message);
+            const match = text.match(/^Row\s+(\d+):\s*(.*)$/i);
+            const detail = match ? match[2] : text;
+            let field = "General";
+            if (/^Invalid Enrollment ID$/i.test(detail)) field = "Enrollment ID";
+            else if (/^Invalid Student ID$/i.test(detail)) field = "Student ID";
+            else if (/^Invalid Assigned To user ID$/i.test(detail)) field = "Assigned To";
+            else if (/^Invalid Calling Status/i.test(detail)) field = "Calling Status";
+            else if (/^Called To is required$/i.test(detail)) field = "Called To";
+            else if (/^Invalid Calling Type/i.test(detail)) field = "Calling Type";
+
+            return [
+                match ? match[1] : "",
+                field,
+                detail,
+            ];
+        }),
+    ];
+
+    const xmlRows = rows.map((row) =>
+        `<Row>${row.map((cell) =>
+            `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`
+        ).join("")}</Row>`
+    ).join("");
+
+    const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="Failed Rows"><Table>${xmlRows}</Table></Worksheet>
+</Workbook>`;
+
+    const blob = new Blob([xml], {
+        type: "application/vnd.ms-excel;charset=utf-8;",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `calling-details-failed-rows-${new Date().toISOString().slice(0, 10)}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+};
+
+
 const CallingDetails = () => {
     const [callingTypes, setCallingTypes] =
         useState([]);
@@ -41,6 +99,9 @@ const CallingDetails = () => {
 
     const [uploadError, setUploadError] =
         useState("");
+
+    const [uploadFailedRows, setUploadFailedRows] =
+        useState([]);
 
     const [uploadSuccess, setUploadSuccess] =
         useState("");
@@ -230,6 +291,7 @@ const CallingDetails = () => {
 
             try {
                 setUploadError("");
+                setUploadFailedRows([]);
                 setUploadSuccess("");
 
                 const response =
@@ -341,6 +403,7 @@ const CallingDetails = () => {
         try {
             setUploading(true);
             setUploadError("");
+            setUploadFailedRows([]);
             setUploadSuccess("");
 
             const response =
@@ -368,21 +431,40 @@ const CallingDetails = () => {
                 error
             );
 
-            const apiError =
-                error.response?.data;
+            let apiError = error.response?.data;
+
+            // Some middleware/proxies may return the error payload as a Blob or text.
+            if (apiError instanceof Blob) {
+                try {
+                    apiError = JSON.parse(await apiError.text());
+                } catch {
+                    apiError = { message: "The server returned an unreadable error response." };
+                }
+            } else if (typeof apiError === "string") {
+                try {
+                    apiError = JSON.parse(apiError);
+                } catch {
+                    apiError = { message: apiError };
+                }
+            }
+
+            const rawErrors = apiError?.errors ?? apiError?.data?.errors;
+            const validationErrors = Array.isArray(rawErrors)
+                ? rawErrors.map((item) => {
+                    if (typeof item === "string") return item;
+                    return item?.message || JSON.stringify(item);
+                })
+                : (typeof rawErrors === "string" ? [rawErrors] : []);
+
+            setUploadFailedRows(validationErrors);
 
             let message =
                 apiError?.message ||
+                apiError?.error ||
                 "Failed to upload calling details.";
 
-            if (
-                Array.isArray(
-                    apiError?.errors
-                ) &&
-                apiError.errors.length
-            ) {
-                message =
-                    `${message} ${apiError.errors.join(" | ")}`;
+            if (validationErrors.length) {
+                message = `${message} ${validationErrors.join(" | ")}`;
             }
 
             setUploadError(
@@ -799,9 +881,15 @@ const CallingDetails = () => {
 
                 {/* Upload Error */}
 
-                {uploadError && (
-                    <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {uploadError}
+                {uploadFailedRows.length > 0 && (
+                    <div className="mt-4">
+                        <button
+                            type="button"
+                            onClick={() => downloadFailedCallingRows(uploadFailedRows)}
+                            className="inline-flex items-center rounded-lg border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                        >
+                            Download Failed Log (Excel)
+                        </button>
                     </div>
                 )}
 

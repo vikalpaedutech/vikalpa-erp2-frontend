@@ -237,8 +237,9 @@ export const bulkUploadCallingDetails = async (
         "/calling-management/calling-details/bulk-upload",
         formData,
         {
+            // Leave Content-Type unset: the browser must add the multipart boundary.
             headers: {
-                "Content-Type": "multipart/form-data",
+                "Content-Type": undefined,
             },
         }
     );

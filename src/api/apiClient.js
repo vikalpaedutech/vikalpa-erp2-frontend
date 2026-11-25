@@ -14,9 +14,9 @@ import axios from "axios";
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8100/api/v1",
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // Do not set Content-Type globally.
+  // Axios automatically sets application/json for JSON payloads and,
+  // importantly, lets the browser set the multipart boundary for FormData.
 });
 
 // const apiClient = axios.create({

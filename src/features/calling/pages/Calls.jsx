@@ -1010,31 +1010,32 @@ requestAnimationFrame(() => {
                             // ADDITIONAL INFORMATION 1-10
                             // ------------------------------------------------
 
-                            const additionalInformation = [
-                                call.additionalInformation1,
-                                call.additionalInformation2,
-                                call.additionalInformation3,
-                                call.additionalInformation4,
-                                call.additionalInformation5,
-                                call.additionalInformation6,
-                                call.additionalInformation7,
-                                call.additionalInformation8,
-                                call.additionalInformation9,
-                                call.additionalInformation10,
-                            ]
-                                .map(
-                                    (value, index) => ({
-                                        number:
-                                            index + 1,
-                                        value,
-                                    })
-                                )
-                                .filter(
-                                    ({ value }) =>
-                                        value !== null &&
-                                        value !== undefined &&
-                                        value !== ""
-                                );
+                            const additionalInformation = Array.isArray(call.keyValuePairs) && call.keyValuePairs.length
+                                ? call.keyValuePairs
+                                    .filter((pair) =>
+                                        String(pair?.key ?? "").trim() &&
+                                        pair?.value !== null &&
+                                        pair?.value !== undefined &&
+                                        String(pair.value).trim() !== ""
+                                    )
+                                    .map((pair) => ({
+                                        key: String(pair.key).trim(),
+                                        value: pair.value,
+                                    }))
+                                : [
+                                    call.additionalInformation1,
+                                    call.additionalInformation2,
+                                    call.additionalInformation3,
+                                    call.additionalInformation4,
+                                    call.additionalInformation5,
+                                    call.additionalInformation6,
+                                    call.additionalInformation7,
+                                    call.additionalInformation8,
+                                    call.additionalInformation9,
+                                    call.additionalInformation10,
+                                ]
+                                    .map((value, index) => ({ key: `Additional Information ${index + 1}`, value }))
+                                    .filter(({ value }) => value !== null && value !== undefined && value !== "");
 
 
                             // ------------------------------------------------
@@ -1085,22 +1086,14 @@ if (
                                     <div className="flex items-start justify-between gap-4">
 
                                         <div>
-
                                             <h2 className="text-base font-semibold text-gray-900">
-                                                {
-                                                    call.calledTo ||
-                                                    "Unknown"
-                                                }
+                                                {call.uniqueDataId || call.calledTo || "Unknown"}
                                             </h2>
-
-                                            <p className="mt-1 text-sm text-gray-500">
-                                                Father:{" "}
-                                                {
-                                                    call.father ||
-                                                    "-"
-                                                }
-                                            </p>
-
+                                            {!call.uniqueDataId && (
+                                                <p className="mt-1 text-sm text-gray-500">
+                                                    Father: {call.father || "-"}
+                                                </p>
+                                            )}
                                         </div>
 
 
@@ -1137,56 +1130,24 @@ if (
 
 
                                     {/* -------------------------------- */}
-                                    {/* LOCATION */}
-                                    {/* -------------------------------- */}
-
-                                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-
-                                        <div>
-                                            <p className="text-xs text-gray-400">
-                                                District
-                                            </p>
-
-                                            <p className="mt-1 text-sm font-medium text-gray-700">
-                                                {
-                                                    call.calledDistrict ||
-                                                    "-"
-                                                }
-                                            </p>
+                                    {/* LOCATION - retained for legacy/absentee records */}
+                                    {!call.uniqueDataId && (
+                                        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                            <div>
+                                                <p className="text-xs text-gray-400">District</p>
+                                                <p className="mt-1 text-sm font-medium text-gray-700">{call.calledDistrict || "-"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-400">Block</p>
+                                                <p className="mt-1 text-sm font-medium text-gray-700">{call.calledBlock || "-"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-400">Center</p>
+                                                <p className="mt-1 text-sm font-medium text-gray-700">{call.calledCenter || "-"}</p>
+                                            </div>
                                         </div>
+                                    )}
 
-
-                                        <div>
-                                            <p className="text-xs text-gray-400">
-                                                Block
-                                            </p>
-
-                                            <p className="mt-1 text-sm font-medium text-gray-700">
-                                                {
-                                                    call.calledBlock ||
-                                                    "-"
-                                                }
-                                            </p>
-                                        </div>
-
-
-                                        <div>
-                                            <p className="text-xs text-gray-400">
-                                                Center
-                                            </p>
-
-                                            <p className="mt-1 text-sm font-medium text-gray-700">
-                                                {
-                                                    call.calledCenter ||
-                                                    "-"
-                                                }
-                                            </p>
-                                        </div>
-
-                                    </div>
-
-
-                                    {/* -------------------------------- */}
                                     {/* CONTACT NUMBERS */}
                                     {/* -------------------------------- */}
 
@@ -1246,7 +1207,7 @@ if (
 
                                                 {additionalInformation.map(
                                                     ({
-                                                        number,
+                                                        key,
                                                         value,
                                                     }) => {
 
@@ -1272,20 +1233,16 @@ if (
 
                                                         return (
                                                             <div
-                                                                key={`${call._id}-additional-${number}`}
+                                                                key={`${call._id}-additional-${key}`}
                                                                 className="flex items-start gap-2 text-sm text-gray-700"
                                                             >
 
-                                                                <span className="min-w-[20px] font-medium text-gray-500">
-                                                                    {
-                                                                        number
-                                                                    }.
+                                                                <span className="min-w-[110px] font-medium text-gray-500">
+                                                                    {key}
                                                                 </span>
 
                                                                 <span className="break-words">
-                                                                    {
-                                                                        displayValue
-                                                                    }
+                                                                    {displayValue}
                                                                 </span>
 
                                                             </div>
