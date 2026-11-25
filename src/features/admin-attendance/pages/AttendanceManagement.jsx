@@ -97,12 +97,17 @@ const formatDate = (date) => {
 
 
 const getAttendanceStatusLabel = (record) => {
+  if (record?.__sunday || record?.status === "Sunday") return "Sunday";
   if (record?.status !== "Leave") return record?.status || (record?.__missing ? "Absent" : "-");
   const leaveType = record?.leaveId?.leaveTypeId;
+  const name = typeof leaveType === "object"
+    ? (leaveType?.name || record?.leaveTypeName || "")
+    : (record?.leaveTypeName || "");
   const code = typeof leaveType === "object"
-    ? (leaveType?.code || leaveType?.name)
-    : (record?.leaveTypeCode || record?.leaveTypeName);
-  return code ? `Leave (${code})` : "Leave";
+    ? (leaveType?.code || record?.leaveTypeCode || "")
+    : (record?.leaveTypeCode || "");
+  if (name && code) return `${name} (${code})`;
+  return name || code || "Leave";
 };
 
 const isAdminMarkedLeave = (record) =>
@@ -1528,8 +1533,11 @@ function AttendanceManagement() {
     const rows = [];
     selectedDates.forEach(({ key, isSunday }) => {
       const matches = (selected?.recordsByDate.get(key) || []);
-      if (matches.length) rows.push(...matches);
-      else rows.push({ _id: `missing-${key}`, date: key, __missing: true, __sunday: isSunday, status: isSunday ? "Sunday" : "Absent" });
+      if (isSunday) {
+        if (matches.length) rows.push(...matches.map((record) => ({ ...record, __sunday: true, status: "Sunday" })));
+        else rows.push({ _id: `missing-${key}`, date: key, __missing: true, __sunday: true, status: "Sunday" });
+      } else if (matches.length) rows.push(...matches);
+      else rows.push({ _id: `missing-${key}`, date: key, __missing: true, status: "Absent" });
     });
     return rows.reverse();
   }, [summaryRows, selectedDetailUser, selectedDates, fromDate, toDate]);
@@ -1629,7 +1637,18 @@ function AttendanceManagement() {
     const detailHeaders = ["_id", "Employee Name", "Email", "userId", "Contact", "Role", "Designation", "Department", "Access Scope", "District", "Block", "Center", "Date", "Attendance", "Type", "Source", "Check In", "Check Out", "Location"];
     const matrixHeaders = ["_id", "Employee Name", "Email", "userId", "Contact", "Role", "Designation", "Department", "Access Scope", "District", "Block", "Center", ...selectedDates.map(({ key, isSunday }) => ({ value: dateLabel(key, isSunday), mergeAcross: 1 }))];
     const matrixSubHeader = [...Array(12).fill(""), ...selectedDates.flatMap(() => ["Check In", "Check Out"])];
-    const presentSummaryRows = [[...detailHeaders.slice(0, 12), ...selectedDates.map(({ key, isSunday }) => dateLabel(key, isSunday)), "Total Present", "Total Absent", "Total Sundays", "Total Holidays", "Total Days"]];
+    const leaveTypeColumns = [...new Map(
+      attendance
+        .filter((record) => record.status === "Leave")
+        .map((record) => {
+          const leaveType = record?.leaveId?.leaveTypeId;
+          const name = typeof leaveType === "object" ? (leaveType?.name || "") : (record?.leaveTypeName || "");
+          const code = typeof leaveType === "object" ? (leaveType?.code || "") : (record?.leaveTypeCode || "");
+          const label = name && code ? `${name} (${code})` : name || code || "Leave";
+          return [label, label];
+        })
+    ).entries()].map(([label]) => label);
+    const presentSummaryRows = [[...detailHeaders.slice(0, 12), ...selectedDates.map(({ key, isSunday }) => dateLabel(key, isSunday)), "Total Present", "Total Absent", "Total Sundays", "Total Holidays", "Total Days", ...leaveTypeColumns]];
     const lateRows = [[...detailHeaders.slice(0, 12), "Date", "Attendance", "Check In", "Check Out", "Location", "Late Coming (Minutes)", "Early Departure (Minutes)", "Total Working Hours"]];
     const minutesOf = (value) => {
       if (!value) return null;
@@ -1650,7 +1669,18 @@ function AttendanceManagement() {
       selectedDates.forEach(({ key, isSunday }) => {
         const records = row.recordsByDate.get(key) || [];
         const record = records[0] || null;
-        const status = isSunday ? "Sunday" : (records.some((r) => r.status === "Holiday") ? "H" : (records.some((r) => ["Present", "WFH"].includes(r.status)) ? "P" : "A"));
+        const leaveRecord = records.find((r) => r.status === "Leave");
+        const status = isSunday
+          ? "Sunday"
+          : records.some((r) => r.status === "Holiday")
+            ? "H"
+            : records.some((r) => r.status === "Present")
+              ? "P"
+              : records.some((r) => r.status === "WFH")
+                ? "WFH"
+                : leaveRecord
+                  ? getAttendanceStatusLabel(leaveRecord)
+                  : "A";
         dayStatuses.push(status);
         if (records.length) records.forEach((r) => detailedRows.push([...identity, key.split("-").reverse().join("-"), getAttendanceStatusLabel(r), r.attendanceType || "", r.attendanceSource || "", formatClock(r.checkIn), formatClock(r.checkOut), r.visitedLocation || ""]));
         else detailedRows.push([...identity, key.split("-").reverse().join("-"), isSunday ? "Sunday" : "Absent", "", "", "", "", ""]);
@@ -1674,7 +1704,8 @@ function AttendanceManagement() {
       const totalSundays = dayStatuses.filter((x) => x === "Sunday").length;
       const totalAbsent = dayStatuses.filter((x) => x === "A").length;
       const totalHolidays = dayStatuses.filter((x) => x === "H").length;
-      presentSummaryRows.push([...identity, ...dayStatuses, totalPresent, totalAbsent, totalSundays, totalHolidays, selectedDates.length]);
+      const leaveTypeCounts = leaveTypeColumns.map((label) => dayStatuses.filter((value) => value === label).length);
+      presentSummaryRows.push([...identity, ...dayStatuses, totalPresent, totalAbsent, totalSundays, totalHolidays, selectedDates.length, ...leaveTypeCounts]);
     });
     const firstSheetRows = [[...detailHeaders].map((value) => ({ value, header: true })), ...detailedRows];
     const presentRows = presentSummaryRows.map((row, index) => index === 0 ? row.map((value) => ({ value, header: true })) : row);
