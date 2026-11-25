@@ -38,6 +38,40 @@ const formatAttendanceTime = (value) => {
 };
 
 
+const timeToMinutes = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
+};
+
+const formatMinutes = (minutes) => {
+  if (minutes == null) return "-";
+  if (minutes <= 0) return "0 min";
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (!hours) return `${remainingMinutes} min`;
+  if (!remainingMinutes) return `${hours} hr`;
+  return `${hours} hr ${remainingMinutes} min`;
+};
+
+const getTimeDifference = (actualValue, expectedMinutes, direction) => {
+  const actualMinutes = actualValue ? timeToMinutes(formatAttendanceTime(actualValue).slice(0, 5)) : null;
+  if (actualMinutes == null || expectedMinutes == null) return "-";
+  const difference = direction === "late"
+    ? Math.max(0, actualMinutes - expectedMinutes)
+    : Math.max(0, expectedMinutes - actualMinutes);
+  return difference > 0 ? formatMinutes(difference) : "On Time";
+};
+
+const formatOfficeTiming = (officeTiming) => {
+  if (!officeTiming?.officeTime && !officeTiming?.leaveTime) return "-";
+  return `${officeTiming.officeTime || "--:--"} - ${officeTiming.leaveTime || "--:--"}`;
+};
+
 const formatDate = (date) => {
   if (!date) return "-";
 
@@ -166,6 +200,11 @@ function MyAttendance() {
   const [attendance, setAttendance] =
     useState([]);
 
+  const [officeTiming, setOfficeTiming] = useState({
+    officeTime: "",
+    leaveTime: "",
+  });
+
   const [loading, setLoading] =
     useState(true);
 
@@ -202,6 +241,10 @@ function MyAttendance() {
           limit: 5000,
         });
 
+      setOfficeTiming(response?.officeTiming || response?.data?.officeTiming || {
+        officeTime: "",
+        leaveTime: "",
+      });
       setAttendance(
         buildDailyAttendance(
           response?.data || [],
@@ -257,6 +300,9 @@ function MyAttendance() {
       "Check Out": item.checkOut
         ? formatAttendanceTime(item.checkOut)
         : "",
+      "Late Coming": item.status === "Sunday" ? "" : getTimeDifference(item.checkIn, timeToMinutes(officeTiming.officeTime), "late"),
+      "Early Departure": item.status === "Sunday" ? "" : getTimeDifference(item.checkOut, timeToMinutes(officeTiming.leaveTime), "early"),
+      "Office Timing": formatOfficeTiming(officeTiming),
       "Visited Location": item.visitedLocation || "",
       Remarks: item.remarks || "",
     }));
@@ -269,6 +315,9 @@ function MyAttendance() {
         { key: "Status", label: "Status" },
         { key: "Check In", label: "Check In" },
         { key: "Check Out", label: "Check Out" },
+        { key: "Late Coming", label: "Late Coming" },
+        { key: "Early Departure", label: "Early Departure" },
+        { key: "Office Timing", label: "Office Timing" },
         { key: "Visited Location", label: "Visited Location" },
         { key: "Remarks", label: "Remarks" },
       ],
@@ -520,6 +569,18 @@ function MyAttendance() {
                     </th>
 
                     <th className="px-5 py-3 text-left font-semibold text-gray-600">
+                      Late Coming
+                    </th>
+
+                    <th className="px-5 py-3 text-left font-semibold text-gray-600">
+                      Early Departure
+                    </th>
+
+                    <th className="px-5 py-3 text-left font-semibold text-gray-600">
+                      Office Timing
+                    </th>
+
+                    <th className="px-5 py-3 text-left font-semibold text-gray-600">
                       Remarks
                     </th>
 
@@ -560,6 +621,18 @@ function MyAttendance() {
                           {item.checkOut
                             ? formatAttendanceTime(item.checkOut)
                             : "-"}
+                        </td>
+
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          {item.status === "Sunday" ? "-" : getTimeDifference(item.checkIn, timeToMinutes(officeTiming.officeTime), "late")}
+                        </td>
+
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          {item.status === "Sunday" ? "-" : getTimeDifference(item.checkOut, timeToMinutes(officeTiming.leaveTime), "early")}
+                        </td>
+
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          {formatOfficeTiming(officeTiming)}
                         </td>
 
                         <td className="px-5 py-4">
