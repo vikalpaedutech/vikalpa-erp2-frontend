@@ -1,6 +1,5 @@
 import {
     useCallback,
-    useEffect,
     useState,
 } from "react";
 
@@ -54,12 +53,12 @@ const useCallingDetails = () => {
         }, []);
 
 
-    useEffect(() => {
-        fetchCallingDetails({
-            page: 1,
-            limit: 20,
-        });
-    }, [fetchCallingDetails]);
+    const clearCallingDetails = useCallback(() => {
+        setCallingDetails([]);
+        setPagination(null);
+        setError(null);
+        setLoading(false);
+    }, []);
 
 
     return {
@@ -68,6 +67,7 @@ const useCallingDetails = () => {
         loading,
         error,
         fetchCallingDetails,
+        clearCallingDetails,
     };
 };
 

@@ -88,6 +88,9 @@ const CallingDetails = () => {
     const [page, setPage] =
         useState(1);
 
+    const [hasSearched, setHasSearched] =
+        useState(false);
+
     const [showView, setShowView] =
         useState(false);
 
@@ -119,6 +122,7 @@ const CallingDetails = () => {
         loading,
         error,
         fetchCallingDetails,
+        clearCallingDetails,
     } = useCallingDetails();
 
 
@@ -199,8 +203,21 @@ const CallingDetails = () => {
     ) => {
         event.preventDefault();
 
+        const hasAnyFilter = Boolean(
+            selectedCallingType ||
+            callingStatus ||
+            search.trim()
+        );
+
         setPage(1);
 
+        if (!hasAnyFilter) {
+            setHasSearched(false);
+            clearCallingDetails();
+            return;
+        }
+
+        setHasSearched(true);
         await fetchCallingDetails(
             buildFilters(1)
         );
@@ -218,15 +235,13 @@ const CallingDetails = () => {
         setCallingStatus("");
         setSearch("");
         setPage(1);
+        setHasSearched(false);
+        clearCallingDetails();
 
         setUploadError("");
+        setUploadFailedRows([]);
         setUploadSuccess("");
         setExportError("");
-
-        await fetchCallingDetails({
-            page: 1,
-            limit: 20,
-        });
     };
 
 
@@ -237,6 +252,7 @@ const CallingDetails = () => {
      */
 
     const handleRefresh = async () => {
+        if (!hasSearched) return;
         await fetchCallingDetails(
             buildFilters(page)
         );
@@ -252,6 +268,8 @@ const CallingDetails = () => {
     const handlePageChange = async (
         newPage
     ) => {
+        if (!hasSearched) return;
+
         if (
             newPage < 1 ||
             (
@@ -421,10 +439,13 @@ const CallingDetails = () => {
 
             setPage(1);
 
-            await fetchCallingDetails({
-                page: 1,
-                limit: 20,
-            });
+            if (hasSearched) {
+                await fetchCallingDetails(
+                    buildFilters(1)
+                );
+            } else {
+                clearCallingDetails();
+            }
         } catch (error) {
             console.error(
                 "Failed to upload calling details:",
@@ -1132,28 +1153,22 @@ const CallingDetails = () => {
                 </div>
 
 
-                <CallingDetailsTable
-                    callingDetails={
-                        callingDetails
-                    }
-                    loading={
-                        loading
-                    }
-                    onView={
-                        handleView
-                    }
-                    onEdit={
-                        undefined
-                    }
-                    onRefresh={
-                        handleRefresh
-                    }
-                />
+                {!hasSearched ? (
+                    <div className="rounded-lg border border-dashed border-gray-300 px-4 py-10 text-center text-sm text-gray-500">
+                        Apply at least one filter or enter a search term, then click Search to view calling records.
+                    </div>
+                ) : (
+                    <>
+                        <CallingDetailsTable
+                            callingDetails={callingDetails}
+                            loading={loading}
+                            onView={handleView}
+                            onEdit={undefined}
+                            onRefresh={handleRefresh}
+                        />
 
-
-                {/* Pagination */}
-
-                {pagination &&
+                        {/* Pagination */}
+                        {pagination &&
                     pagination.totalPages >
                         1 && (
                         <div className="mt-5 flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1212,6 +1227,8 @@ const CallingDetails = () => {
 
                         </div>
                     )}
+                    </>
+                )}
 
             </div>
 
