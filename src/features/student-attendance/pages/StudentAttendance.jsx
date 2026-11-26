@@ -164,6 +164,15 @@ function StudentAttendance() {
     const [students, setStudents] =
         useState([]);
 
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 100,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+    });
+
     const [summary, setSummary] =
         useState({});
 
@@ -756,13 +765,15 @@ function StudentAttendance() {
      */
 
     const loadAttendance =
-        async () => {
+        async (requestedPage = 1) => {
             try {
                 setLoading(true);
                 setError("");
 
                 const params = {
                     date,
+                    page: requestedPage,
+                    limit: 100,
                 };
 
                 if (programId) {
@@ -821,6 +832,17 @@ function StudentAttendance() {
                         {}
                 );
 
+                setPagination(
+                    response?.data?.pagination || {
+                        page: requestedPage,
+                        limit: 100,
+                        total: response?.data?.summary?.total || 0,
+                        totalPages: Math.ceil((response?.data?.summary?.total || 0) / 100),
+                        hasNextPage: requestedPage < Math.ceil((response?.data?.summary?.total || 0) / 100),
+                        hasPreviousPage: requestedPage > 1,
+                    }
+                );
+
                 setHasSearched(true);
             } catch (error) {
                 console.error(
@@ -830,6 +852,7 @@ function StudentAttendance() {
 
                 setStudents([]);
                 setSummary({});
+                setPagination({ page: 1, limit: 100, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false });
 
                 setError(
                     error?.response
@@ -920,7 +943,7 @@ function StudentAttendance() {
                 return;
             }
 
-            await loadAttendance();
+            await loadAttendance(1);
         };
 
     /*
@@ -1191,7 +1214,7 @@ function StudentAttendance() {
 
             const confirmed =
                 window.confirm(
-                    `Mark all ${enrollmentIds.length} students as Present?`
+                    `Mark all ${enrollmentIds.length} students on this page as Present?`
                 );
 
             if (!confirmed) {
@@ -1305,6 +1328,7 @@ function StudentAttendance() {
 
         setStudents([]);
         setSummary({});
+        setPagination({ page: 1, limit: 100, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false });
         setError("");
         setHasSearched(false);
     };
@@ -1335,7 +1359,7 @@ function StudentAttendance() {
                         disabled={bulkLoading || loading || !students.length}
                         className="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {bulkLoading ? "Marking..." : "Mark All Present"}
+                        {bulkLoading ? "Marking..." : "Mark Page Present"}
                     </button>
                 )}
             </div>
@@ -1477,6 +1501,38 @@ function StudentAttendance() {
                             handleMarkAttendance
                         }
                     />
+
+                    {pagination.totalPages > 1 && (
+                        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm text-gray-600">
+                                Showing {(pagination.page - 1) * pagination.limit + 1}
+                                {"–"}
+                                {Math.min(pagination.page * pagination.limit, pagination.total)}
+                                {" "}of {pagination.total} students
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    disabled={!pagination.hasPreviousPage || loading}
+                                    onClick={() => loadAttendance(pagination.page - 1)}
+                                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-sm font-medium text-gray-700">
+                                    Page {pagination.page} of {pagination.totalPages}
+                                </span>
+                                <button
+                                    type="button"
+                                    disabled={!pagination.hasNextPage || loading}
+                                    onClick={() => loadAttendance(pagination.page + 1)}
+                                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
 

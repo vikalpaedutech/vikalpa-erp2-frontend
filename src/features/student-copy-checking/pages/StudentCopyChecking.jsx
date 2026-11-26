@@ -115,6 +115,17 @@ const StudentCopyChecking = () => {
     setStudents,
   ] = useState([]);
 
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 100,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
+
+  const [studentSearch, setStudentSearch] = useState("");
+
   const [
     loadingStudents,
     setLoadingStudents,
@@ -202,6 +213,7 @@ const StudentCopyChecking = () => {
 
     setBatchId("");
     setStudents([]);
+    setPagination({ page: 1, limit: 100, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false });
     setHasSearched(false);
     setError("");
 
@@ -389,7 +401,7 @@ const StudentCopyChecking = () => {
   */
 
   const handleSearchStudents =
-    async () => {
+    async (requestedPage = 1) => {
 
       if (!filtersReady) {
 
@@ -418,10 +430,13 @@ const StudentCopyChecking = () => {
           batchId,
           centerId,
           checkDate,
-          page: 1,
+          page: requestedPage,
           limit: 100,
         };
 
+        if (studentSearch.trim()) {
+          params.search = studentSearch.trim();
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -451,6 +466,17 @@ const StudentCopyChecking = () => {
         let fetchedStudents =
           response?.data
             ?.students || [];
+
+        setPagination(
+          response?.data?.pagination || {
+            page: requestedPage,
+            limit: 100,
+            total: fetchedStudents.length,
+            totalPages: fetchedStudents.length ? 1 : 0,
+            hasNextPage: false,
+            hasPreviousPage: requestedPage > 1,
+          }
+        );
 
 
         /*
@@ -644,6 +670,8 @@ const StudentCopyChecking = () => {
   const handleClear = () => {
 
     setStudents([]);
+    setStudentSearch("");
+    setPagination({ page: 1, limit: 100, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false });
     setHasSearched(false);
     setError("");
 
@@ -819,6 +847,31 @@ const StudentCopyChecking = () => {
 
         </div>
 
+
+        {/* ====================================================
+            STUDENT QUICK SEARCH
+        ==================================================== */}
+
+        <div className="mt-4">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Search Student
+          </label>
+          <input
+            type="text"
+            value={studentSearch}
+            onChange={(event) => setStudentSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                handleSearchStudents(1);
+              }
+            }}
+            placeholder="Search by student name, father name or roll number"
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Partial, case-insensitive search.
+          </p>
+        </div>
 
         {/* ====================================================
             ACTIONS
@@ -1001,8 +1054,8 @@ const StudentCopyChecking = () => {
               </div>
 
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                {students.length}{" "}
-                {students.length === 1
+                {pagination.total}{" "}
+                {pagination.total === 1
                   ? "Student"
                   : "Students"}
               </span>
@@ -1042,6 +1095,42 @@ const StudentCopyChecking = () => {
               )}
 
             </div>
+
+            {/* =========================================
+                PAGINATION
+            ========================================= */}
+
+            {pagination.totalPages > 1 && (
+              <div className="mt-5 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-600">
+                  Showing {(pagination.page - 1) * pagination.limit + 1}
+                  {"–"}
+                  {Math.min(pagination.page * pagination.limit, pagination.total)}
+                  {" "}of {pagination.total} students
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!pagination.hasPreviousPage || loadingStudents}
+                    onClick={() => handleSearchStudents(pagination.page - 1)}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm font-medium text-slate-700">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!pagination.hasNextPage || loadingStudents}
+                    onClick={() => handleSearchStudents(pagination.page + 1)}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
 
           </div>
 
